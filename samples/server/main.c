@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -61,28 +62,22 @@ static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
 }
 
 static void usage(const char *procname) {
-	printf("usage: %s -s listen_ip -p listen_port -c cocurrent -n count\r\n", procname);
+	printf("usage: %s -s listen_ip -p listen_port\r\n", procname);
 }
 
 int main(int argc, char *argv[]) {
-	int ch, cocurrent = 100, count = 100, port = 8088;
+	int ch, port = 8088;
 	char addr[64];
 
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 
-	while ((ch = getopt(argc, argv, "hs:c:n:p:")) > 0) {
+	while ((ch = getopt(argc, argv, "hs:p:")) > 0) {
 		switch (ch) {
 		case 'h':
 			usage(argv[0]);
 			return 0;
 		case 's':
 			snprintf(addr, sizeof(addr), "%s", optarg);
-			break;
-		case 'c':
-			cocurrent = atoi(optarg);
-			break;
-		case 'n':
-			count = atoi(optarg);
 			break;
 		case 'p':
 			port = atoi(optarg);

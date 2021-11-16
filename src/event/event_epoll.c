@@ -6,39 +6,9 @@
 #ifndef __USE_GNU
 #define __USE_GNU
 #endif
-#include <dlfcn.h>
 #include <sys/epoll.h>
 #include "event.h"
 #include "event_epoll.h"
-
-typedef int (*epoll_create_fn)(int);
-typedef int (*epoll_wait_fn)(int, struct epoll_event *,int, int);
-typedef int (*epoll_ctl_fn)(int, int, int, struct epoll_event *);
-
-static epoll_create_fn __sys_epoll_create = NULL;
-static epoll_wait_fn   __sys_epoll_wait   = NULL;
-static epoll_ctl_fn    __sys_epoll_ctl    = NULL;
-
-static void hook_api(void)
-{
-	__sys_epoll_create = (epoll_create_fn) dlsym(RTLD_NEXT, "epoll_create");
-	assert(__sys_epoll_create);
-
-	__sys_epoll_wait   = (epoll_wait_fn) dlsym(RTLD_NEXT, "epoll_wait");
-	assert(__sys_epoll_wait);
-
-	__sys_epoll_ctl    = (epoll_ctl_fn) dlsym(RTLD_NEXT, "epoll_ctl");
-	assert(__sys_epoll_ctl);
-}
-
-static pthread_once_t __once_control = PTHREAD_ONCE_INIT;
-
-static void hook_init(void)
-{
-	if (pthread_once(&__once_control, hook_api) != 0) {
-		abort();
-	}
-}
 
 /****************************************************************************/
 
@@ -63,8 +33,9 @@ static int epoll_add_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	struct epoll_event ee;
 	int op, n;
 
-	if ((fe->mask & EVENT_READ))
+	if ((fe->mask & EVENT_READ)) {
 		return 0;
+    }
 
 	ee.events   = 0;
 	ee.data.u32 = 0;
@@ -81,15 +52,15 @@ static int epoll_add_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
 		n  = 1;
 	}
 
-	if (__sys_epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
+	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
 		fe->mask |= EVENT_READ;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EPERM) {
-		msg_error("%s(%d): epoll_ctl error %s, epfd=%d, fd=%d\n",
-			__FUNCTION__, __LINE__, last_serror(), ep->epfd, fe->fd);
+		msg_error("%s(%d): epoll_ctl error %d, epfd=%d, fd=%d\n",
+			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
@@ -115,15 +86,15 @@ static int epoll_add_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
 		n  = 1;
 	}
 
-	if (__sys_epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
+	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
 		fe->mask |= EVENT_WRITE;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EPERM) {
-		msg_error("%s(%d): epoll_ctl error %s, epfd=%d, fd=%d",
-			__FUNCTION__, __LINE__, last_serror(), ep->epfd, fe->fd);
+		msg_error("%s(%d): epoll_ctl error %d, epfd=%d, fd=%d",
+			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
@@ -147,15 +118,15 @@ static int epoll_del_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
 		n  = -1;
 	}
 
-	if (__sys_epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
+	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
 		fe->mask &= ~EVENT_READ;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EEXIST) {
-		msg_error("%s(%d), epoll_ctl error: %s, epfd=%d, fd=%d",
-			__FUNCTION__, __LINE__, last_serror(), ep->epfd, fe->fd);
+		msg_error("%s(%d), epoll_ctl error: %d, epfd=%d, fd=%d",
+			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
@@ -179,15 +150,15 @@ static int epoll_del_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
 		n  = -1;
 	}
 
-	if (__sys_epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
+	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
 		fe->mask &= ~EVENT_WRITE;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EEXIST) {
-		msg_error("%s(%d), epoll_ctl error: %s, efd=%d, fd=%d",
-			__FUNCTION__, __LINE__, last_serror(), ep->epfd, fe->fd);
+		msg_error("%s(%d), epoll_ctl error: %d, efd=%d, fd=%d",
+			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
@@ -199,18 +170,13 @@ static int epoll_event_wait(EVENT *ev, int timeout)
 	FILE_EVENT *fe;
 	int n, i;
 
-	if (__sys_epoll_wait == NULL) {
-		hook_init();
-	}
-
-	n = __sys_epoll_wait(ep->epfd, ep->events, ep->size, timeout);
+	n = epoll_wait(ep->epfd, ep->events, ep->size, timeout);
 
 	if (n < 0) {
 		if (last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		msg_fatal("%s: epoll_wait error %s",
-			__FUNCTION__, last_serror());
+		msg_fatal("%s: epoll_wait error %d", __FUNCTION__, last_error());
 	} else if (n == 0) {
 		return 0;
 	}
@@ -262,15 +228,11 @@ EVENT *event_epoll_create(int size)
 {
 	EVENT_EPOLL *ep = (EVENT_EPOLL *) mem_calloc(1, sizeof(EVENT_EPOLL));
 
-	if (__sys_epoll_create == NULL) {
-		hook_init();
-	}
-
 	ep->events = (struct epoll_event *)
 		mem_malloc(sizeof(struct epoll_event) * size);
 	ep->size   = size;
 
-	ep->epfd = __sys_epoll_create(1024);
+	ep->epfd = epoll_create(1024);
 	assert(ep->epfd >= 0);
 
 	ep->event.name   = epoll_name;
