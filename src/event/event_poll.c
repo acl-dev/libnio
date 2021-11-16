@@ -150,10 +150,10 @@ static int poll_wait(EVENT *ev, int timeout)
 #else
 	if (n == -1) {
 #endif
-		if (last_error() == FIBER_EINTR) {
+		if (last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		msg_fatal("%s: poll error %s", __FUNCTION__, last_serror());
+		msg_fatal("%s: poll error %d", __FUNCTION__, last_error());
 	} else if (n == 0) {
 		return n;
 	}

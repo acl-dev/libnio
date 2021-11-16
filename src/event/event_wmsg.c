@@ -366,7 +366,7 @@ static BOOL InitApplication(const char *class_name, HINSTANCE hInstance)
 	/* Register the window class. */
 	if (RegisterClassEx(&wcx) == 0) {
 		msg_error("%s(%d): RegisterClassEx error(%d, %s)", __FUNCTION__,
-			__LINE__, acl_fiber_last_error(), last_serror());
+			__LINE__, last_error(), last_serror());
 		return FALSE;
 	} else {
 		return TRUE;
@@ -380,7 +380,7 @@ static HWND InitInstance(const char *class_name, HINSTANCE hInstance)
 
 	cs.dwExStyle = 0;
 	cs.lpszClass = class_name;
-	cs.lpszName  = "Acl Fiber Socket Notification Sink";
+	cs.lpszName  = "Event Socket Notification Sink";
 	cs.style = WS_OVERLAPPED;
 	cs.x  = 0;
 	cs.y  = 0;
@@ -420,7 +420,7 @@ static const char *wmsg_name(void)
 	return "wmsg";
 }
 
-static const char *__class_name = "__AclFiberEventsMainWClass";
+static const char *__class_name = "__EventEventsMainWClass";
 
 EVENT *event_wmsg_create(int size)
 {

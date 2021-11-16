@@ -39,8 +39,8 @@ int open_limit(int limit)
 #else
 		rlim_cur = getdtablesize();
 #endif
-		msg_warn("%s(%d): getrlimit error: %s, use: %d",
-			__FUNCTION__, __LINE__, last_serror(), rlim_cur);
+		msg_warn("%s(%d): getrlimit error: %d, use: %d",
+			__FUNCTION__, __LINE__, last_error(), rlim_cur);
 		return rlim_cur;
 	}
 
@@ -56,9 +56,9 @@ int open_limit(int limit)
 			rl.rlim_cur = limit;
 		}
 		if (setrlimit(RLIMIT_NOFILE, &rl) < 0) {
-			msg_warn("%s(%d): setrlimit error: %s, limit: %d,"
+			msg_warn("%s(%d): setrlimit error: %d, limit: %d,"
 				" curr: %d", __FUNCTION__, __LINE__,
-				last_serror(), limit, rlim_cur);
+				last_error(), limit, rlim_cur);
 			return rlim_cur;
 		} else {
 			return (int) rl.rlim_cur;
@@ -67,9 +67,9 @@ int open_limit(int limit)
 		rlim_cur = (int) rl.rlim_cur;
 		rl.rlim_cur = rl.rlim_max;
 		if (setrlimit(RLIMIT_NOFILE, &rl) < 0) {
-			msg_warn("%s(%d): setrlimit error: %s,"
+			msg_warn("%s(%d): setrlimit error: %d,"
 				" cur: %d, max: %d", __FUNCTION__, __LINE__,
-				last_serror(), (int) rl.rlim_cur,
+				last_error(), (int) rl.rlim_cur,
 				(int) rl.rlim_max);
 			return rlim_cur;
 		}

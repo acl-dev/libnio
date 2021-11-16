@@ -206,7 +206,7 @@ static int epoll_event_wait(EVENT *ev, int timeout)
 	n = __sys_epoll_wait(ep->epfd, ep->events, ep->size, timeout);
 
 	if (n < 0) {
-		if (acl_fiber_last_error() == FIBER_EINTR) {
+		if (last_error() == EVENT_EINTR) {
 			return 0;
 		}
 		msg_fatal("%s: epoll_wait error %s",

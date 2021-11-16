@@ -2,6 +2,7 @@
 #define EVENT_INCLUDE_H
 
 #include "define.h"
+#include "ring.h"
 
 #ifdef	HAS_EPOLL
 #include <sys/epoll.h>
@@ -160,9 +161,9 @@ struct EVENT {
 	RING   epoll_list;
 #endif
 	unsigned waiter;
+	acl_handle_t (*handle)(EVENT *);
 
 	const char *(*name)(void);
-	acl_handle_t (*handle)(EVENT *);
 	void (*free)(EVENT *);
 
 	int  (*event_fflush)(EVENT *);
@@ -184,7 +185,6 @@ void file_event_free(FILE_EVENT *fe);
 /* event.c */
 EVENT *event_create(int size, int event_type);
 const char *event_name(EVENT *ev);
-acl_handle_t event_handle(EVENT *ev);
 ssize_t event_size(EVENT *ev);
 void event_free(EVENT *ev);
 void event_close(EVENT *ev, FILE_EVENT *fe);

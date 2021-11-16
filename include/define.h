@@ -58,11 +58,75 @@ typedef unsigned long nfds_t;
 # endif
 #endif
 
-#ifndef fiber_unused
+#if defined(_WIN32) || defined (_WIN64)
+# include <winsock2.h>
+
+/* typedef intptr_t ssize_t; */
+# ifndef	HAS_SSIZE_T
+#  define	HAS_SSIZE_T
+/* typedef intptr_t ssize_t; */
+#  if defined(_WIN64)
+typedef __int64 ssize_t;
+#  elif defined(_WIN32)
+typedef int ssize_t;
+#  else
+typedef long ssize_t;
+#  endif
+# endif
+typedef SOCKET socket_t;
+typedef int socklen_t;
+
+# define	EVENT_ETIMEDOUT		WSAETIMEDOUT
+# define	EVENT_ENOMEM		WSAENOBUFS
+# define	EVENT_EINVAL		WSAEINVAL
+# define	EVENT_ECONNREFUSED	WSAECONNREFUSED
+# define	EVENT_ECONNRESET	WSAECONNRESET
+# define	EVENT_EHOSTDOWN		WSAEHOSTDOWN
+# define	EVENT_EHOSTUNREACH	WSAEHOSTUNREACH
+# define	EVENT_EINTR		WSAEINTR
+# define	EVENT_ENETDOWN		WSAENETDOWN
+# define	EVENT_ENETUNREACH	WSAENETUNREACH
+# define	EVENT_ENOTCONN		WSAENOTCONN
+# define	EVENT_EISCONN		WSAEISCONN
+# define	EVENT_EWOULDBLOCK	WSAEWOULDBLOCK
+# define	EVENT_EAGAIN		EVENT_EWOULDBLOCK	/* xxx */
+# define	EVENT_ENOBUFS		WSAENOBUFS
+# define	EVENT_ECONNABORTED	WSAECONNABORTED
+# define	EVENT_EINPROGRESS	WSAEINPROGRESS
+
+#else
+
+# define INVALID_SOCKET	-1
+typedef int socket_t;
+
+# define	EVENT_ETIMEDOUT		ETIMEDOUT
+# define	EVENT_ENOMEM		ENOMEM
+# define	EVENT_EINVAL		EINVAL
+# define	EVENT_ECONNREFUSED	ECONNREFUSED
+# define	EVENT_ECONNRESET	ECONNRESET
+# define	EVENT_EHOSTDOWN		EHOSTDOWN
+# define	EVENT_EHOSTUNREACH	EHOSTUNREACH
+# define	EVENT_EINTR		EINTR
+# define	EVENT_EAGAIN		EAGAIN
+# define	EVENT_ENETDOWN		ENETDOWN
+# define	EVENT_ENETUNREACH	ENETUNREACH
+# define	EVENT_ENOTCONN		ENOTCONN
+# define	EVENT_EISCONN		EISCONN
+# define	EVENT_EWOULDBLOCK	EWOULDBLOCK
+# define	EVENT_ENOBUFS		ENOBUFS
+# define	EVENT_ECONNABORTED	ECONNABORTED
+# define	EVENT_EINPROGRESS	EINPROGRESS
+
+#endif
+
+# include <stdint.h>
+typedef intptr_t acl_handle_t;
+
+#ifndef event_unused
 # ifdef	__GNUC__
-#  define fiber_unused	__attribute__ ((__unused__))
+#  define event_unused	__attribute__ ((__unused__))
 # else
-#  define fiber_unused  /* Ignore */
+#  define event_unused  /* Ignore */
 # endif
 #endif
 
@@ -96,9 +160,9 @@ typedef unsigned long nfds_t;
 #define	DEPRECATED_FOR(f)	DEPRECATED
 #endif	/* __GNUC__ */
 
-#define FIBER_EVENT_KERNEL      0       /* epoll/kqueue/iocp    */
-#define FIBER_EVENT_POLL        1       /* poll                 */
-#define FIBER_EVENT_SELECT      2       /* select               */
-#define FIBER_EVENT_WMSG        3       /* win message          */
+#define EVENT_EVENT_KERNEL      0       /* epoll/kqueue/iocp    */
+#define EVENT_EVENT_POLL        1       /* poll                 */
+#define EVENT_EVENT_SELECT      2       /* select               */
+#define EVENT_EVENT_WMSG        3       /* win message          */
 
 #endif /* __DEFINE_INCLUDE_H__ */

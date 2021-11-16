@@ -67,8 +67,8 @@ static int kqueue_fflush(EVENT_KQUEUE *ek)
 	ts.tv_sec  = 0;
 	ts.tv_nsec = 0;
 	if (__sys_kevent(ek->kqfd, ek->changes, ek->nchanges, NULL, 0, &ts) == -1) {
-		msg_error("%s(%d): kevent error %s, kqfd=%d",
-			__FUNCTION__, __LINE__, last_serror(), ek->kqfd);
+		msg_error("%s(%d): kevent error %d, kqfd=%d",
+			__FUNCTION__, __LINE__, last_error(), ek->kqfd);
 		return -1;
 	}
 
@@ -169,10 +169,10 @@ static int kqueue_wait(EVENT *ev, int timeout)
 	ek->nchanges = 0;
 
 	if (n == -1) {
-		if (last_error() == FIBER_EINTR) {
+		if (last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		msg_fatal("%s: kqueue error %s", __FUNCTION__, last_serror());
+		msg_fatal("%s: kqueue error %d", __FUNCTION__, last_error());
 	} else if (n == 0) {
 		return 0;
 	}

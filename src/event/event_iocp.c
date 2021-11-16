@@ -180,7 +180,7 @@ static int iocp_add_listen(EVENT_IOCP *ev, FILE_EVENT *fe)
 	if (ret == TRUE) {
 		fe->mask |= EVENT_READ;
 		return 1;
-	} else if (acl_fiber_last_error() == ERROR_IO_PENDING) {
+	} else if (last_error() == ERROR_IO_PENDING) {
 		fe->mask |= EVENT_READ;
 		return 0;
 	} else {
@@ -242,12 +242,12 @@ static int iocp_add_read(EVENT_IOCP *ev, FILE_EVENT *fe)
 	if (ret != SOCKET_ERROR) {
 		fe->mask |= EVENT_READ;
 		return 1;
-	} else if (acl_fiber_last_error() == ERROR_IO_PENDING) {
+	} else if (last_error() == ERROR_IO_PENDING) {
 		fe->mask |= EVENT_READ;
 		return 0;
 	} else {
-		msg_warn("%s(%d): ReadFile error(%s), fd=%d",
-			__FUNCTION__, __LINE__, acl_fiber_last_serror(), fe->fd);
+		msg_warn("%s(%d): ReadFile error(%d), fd=%d",
+			__FUNCTION__, __LINE__, last_error(), fe->fd);
 		fe->mask |= EVENT_ERROR;
 		assert(fe->reader);
 		array_append(ev->events, fe->reader);
@@ -274,7 +274,7 @@ static int iocp_add_connect(EVENT_IOCP *ev, FILE_EVENT *fe)
 	if (bind(fe->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		msg_error("%s(%d): bind local ip(%s) error(%s, %d), sock: %u",
 			__FUNCTION__, __LINE__, any_ip, last_serror(),
-			acl_fiber_last_error(), (unsigned) fe->fd);
+			last_error(), (unsigned) fe->fd);
 	}
 
 	dwErr = WSAIoctl(fe->fd,
@@ -303,7 +303,7 @@ static int iocp_add_connect(EVENT_IOCP *ev, FILE_EVENT *fe)
 	if (ret == TRUE) {
 		fe->mask |= EVENT_WRITE;
 		return 1;
-	} else if (acl_fiber_last_error() == ERROR_IO_PENDING) {
+	} else if (last_error() == ERROR_IO_PENDING) {
 		fe->mask |= EVENT_WRITE;
 		return 1;
 	} else {
@@ -359,7 +359,7 @@ static int iocp_add_write(EVENT_IOCP *ev, FILE_EVENT *fe)
 	if (ret == TRUE) {
 		fe->mask |= EVENT_WRITE;
 		return 0;
-	} else if (acl_fiber_last_error() != ERROR_IO_PENDING) {
+	} else if (last_error() != ERROR_IO_PENDING) {
 		fe->mask |= EVENT_WRITE;
 		return 0;
 	} else {

@@ -14,17 +14,17 @@ EVENT *event_create(int size, int event_type)
 	EVENT *ev = NULL;
 
 	switch (event_type) {
-	case FIBER_EVENT_POLL:
+	case EVENT_EVENT_POLL:
 #ifdef	HAS_POLL
 		ev = event_poll_create(size);
 #else
 		msg_fatal("%s(%d): not support!", __FUNCTION__, __LINE__);
 #endif
 		break;
-	case FIBER_EVENT_SELECT:
+	case EVENT_EVENT_SELECT:
 		ev = event_select_create(size);
 		break;
-	case FIBER_EVENT_WMSG:
+	case EVENT_EVENT_WMSG:
 #ifdef	HAS_WMSG
 		ev = event_wmsg_create(size);
 #else
@@ -65,11 +65,6 @@ EVENT *event_create(int size, int event_type)
 const char *event_name(EVENT *ev)
 {
 	return ev->name();
-}
-
-acl_handle_t event_handle(EVENT *ev)
-{
-	return ev->handle(ev);
 }
 
 ssize_t event_size(EVENT *ev)

@@ -149,10 +149,10 @@ static int select_event_wait(EVENT *ev, int timeout)
 	n = select(es->maxfd + 1, &rset, 0, &xset, tp);
 #endif
 	if (n < 0) {
-		if (last_error() == FIBER_EINTR) {
+		if (last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		msg_fatal("%s: select error %s", __FUNCTION__, last_serror());
+		msg_fatal("%s: select error %d", __FUNCTION__, last_error());
 	} else if (n == 0) {
 		return 0;
 	}
