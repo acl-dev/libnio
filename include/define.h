@@ -160,9 +160,9 @@ typedef intptr_t acl_handle_t;
 #define	DEPRECATED_FOR(f)	DEPRECATED
 #endif	/* __GNUC__ */
 
-#define EVENT_EVENT_KERNEL      0       /* epoll/kqueue/iocp    */
-#define EVENT_EVENT_POLL        1       /* poll                 */
-#define EVENT_EVENT_SELECT      2       /* select               */
-#define EVENT_EVENT_WMSG        3       /* win message          */
+#define EVENT_TYPE_KERNEL      0       /* epoll/kqueue/iocp    */
+#define EVENT_TYPE_POLL        1       /* poll                 */
+#define EVENT_TYPE_SELECT      2       /* select               */
+#define EVENT_TYPE_WMSG        3       /* win message          */
 
 #endif /* __DEFINE_INCLUDE_H__ */

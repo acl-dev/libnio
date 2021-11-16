@@ -193,6 +193,6 @@ int  event_add_read(EVENT *ev, FILE_EVENT *fe, event_proc *proc);
 int  event_add_write(EVENT *ev, FILE_EVENT *fe, event_proc *proc);
 void event_del_read(EVENT *ev, FILE_EVENT *fe);
 void event_del_write(EVENT *ev, FILE_EVENT *fe);
-int  event_process(EVENT *ev, int left);
+int  event_wait(EVENT *ev, int left);
 
 #endif

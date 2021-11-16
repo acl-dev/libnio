@@ -35,23 +35,17 @@ static socket_t listen_addr(const char *ip, int port) {
 	return lfd;
 }
 
-static int __nclosed = 0;
-static int __ncalled = 0;
-
 static void read_callback(EVENT *ev, FILE_EVENT *fe) {
-	++__ncalled;
 	char buf[1024];
 	int ret = read(fe->fd, buf, sizeof(buf));
 	if (ret <= 0) {
 		event_close(ev, fe);
 		close(fe->fd);
 		file_event_free(fe);
-		printf(">>>>closed: %d, called=%d\r\n", ++__nclosed, __ncalled);
 	} else if (write(fe->fd, buf, ret) <= 0) {
 		event_close(ev, fe);
 		close(fe->fd);
 		file_event_free(fe);
-		printf(">>>>closed: %d, called=%d\r\n", ++__nclosed, __ncalled);
 	}
 }
 
@@ -70,16 +64,16 @@ static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
 }
 
 static void usage(const char *procname) {
-	printf("usage: %s -s listen_ip -p listen_port\r\n", procname);
+	printf("usage: %s -s listen_ip -p listen_port -t event_type[kernel|poll|select]\r\n", procname);
 }
 
 int main(int argc, char *argv[]) {
-	int ch, port = 8088;
-	char addr[64];
+	int ch, port = 8088, event_type = EVENT_TYPE_POLL;
+	char addr[64], event_type_s[64];
 
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 
-	while ((ch = getopt(argc, argv, "hs:p:")) > 0) {
+	while ((ch = getopt(argc, argv, "hs:p:t:")) > 0) {
 		switch (ch) {
 		case 'h':
 			usage(argv[0]);
@@ -90,6 +84,9 @@ int main(int argc, char *argv[]) {
 		case 'p':
 			port = atoi(optarg);
 			break;
+        case 't':
+            snprintf(event_type_s, sizeof(event_type_s), "%s", optarg);
+            break;
 		default:
 			break;
 		}
@@ -101,17 +98,27 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+    printf("FILE_EVENT size is %zd\r\n", sizeof(FILE_EVENT));
+
 	printf("listen on %s:%d\r\n", addr, port);
 
-	EVENT *ev = event_create(102400, EVENT_EVENT_KERNEL);
-	//EVENT *ev = event_create(10240, EVENT_EVENT_POLL);
+    if (strcasecmp(event_type_s, "kernel") == 0) {
+        event_type = EVENT_TYPE_KERNEL;
+    } else if (strcasecmp(event_type_s, "poll") == 0) {
+        event_type = EVENT_TYPE_POLL;
+    } else if (strcasecmp(event_type_s, "select") == 0) {
+        event_type = EVENT_TYPE_SELECT;
+    }
+
+	EVENT *ev = event_create(1024000, event_type);
 	assert(ev);
 
 	FILE_EVENT *fe = file_event_alloc(lfd);
 	event_add_read(ev, fe, listen_callback);
 
 	while (1) {
-		event_process(ev, 1000);
+		event_wait(ev, 1000);
 	}
+
 	return 0;
 }

@@ -14,17 +14,17 @@ EVENT *event_create(int size, int event_type)
 	EVENT *ev = NULL;
 
 	switch (event_type) {
-	case EVENT_EVENT_POLL:
+	case EVENT_TYPE_POLL:
 #ifdef	HAS_POLL
 		ev = event_poll_create(size);
 #else
 		msg_fatal("%s(%d): not support!", __FUNCTION__, __LINE__);
 #endif
 		break;
-	case EVENT_EVENT_SELECT:
+	case EVENT_TYPE_SELECT:
 		ev = event_select_create(size);
 		break;
-	case EVENT_EVENT_WMSG:
+	case EVENT_TYPE_WMSG:
 #ifdef	HAS_WMSG
 		ev = event_wmsg_create(size);
 #else
@@ -88,31 +88,6 @@ static int checkfd(EVENT *ev, FILE_EVENT *fe)
 #else
 static int checkfd(EVENT *ev, FILE_EVENT *fe)
 {
-#if 0
-	struct stat s;
-
-	if (fstat(fe->fd, &s) < 0) {
-		msg_info("%s(%d), %s: fd: %d fstat error %s", __FILE__,
-			__LINE__, __FUNCTION__, fe->fd, last_serror());
-		return -1;
-	}
-
-	if (S_ISSOCK(s.st_mode)) {
-		return 0;
-	}
-	if (S_ISFIFO(s.st_mode)) {
-		return 0;
-	}
-
-	if (S_ISCHR(s.st_mode)) {
-		return 0;
-	}
-	if (isatty(fe->fd)) {
-		return 0;
-	}
-
-	return ev->checkfd(ev, fe);
-#else
 	(void) ev;
 	/* If we cannot seek, it must be a pipe, socket or fifo, else it
 	 * should be a file.
@@ -122,7 +97,6 @@ static int checkfd(EVENT *ev, FILE_EVENT *fe)
 	} else {
 		return -1;
 	}
-#endif
 }
 #endif
 
@@ -327,7 +301,7 @@ static void event_process_epoll(EVENT *ev)
 }
 #endif
 
-int event_process(EVENT *ev, int timeout)
+int event_wait(EVENT *ev, int timeout)
 {
 	int ret;
 
