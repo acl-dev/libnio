@@ -68,7 +68,7 @@ static void usage(const char *procname) {
 }
 
 int main(int argc, char *argv[]) {
-	int ch, port = 8088, event_type = EVENT_TYPE_POLL;
+	int ch, port = 8088, event_type = EVENT_TYPE_KERNEL;
 	char addr[64], event_type_s[64];
 
 	snprintf(addr, sizeof(addr), "127.0.0.1");
