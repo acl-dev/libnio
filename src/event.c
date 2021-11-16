@@ -138,10 +138,10 @@ static int checkfd(EVENT *ev, FILE_EVENT *fe)
 	 * should be a file.
 	 */
 	if (lseek(fe->fd, (off_t) 0, SEEK_SET) == -1 && errno == ESPIPE) {
-		acl_fiber_set_error(0);
+		//acl_fiber_set_error(0);
 		return 0;
 	} else {
-		acl_fiber_set_error(0);
+		//acl_fiber_set_error(0);
 		return -1;
 	}
 #endif
@@ -196,7 +196,7 @@ int event_add_read(EVENT *ev, FILE_EVENT *fe, event_proc *proc)
 
 	if (fe->fd >= (socket_t) ev->setsize) {
 		msg_error("fd: %d >= setsize: %d", fe->fd, (int) ev->setsize);
-		acl_fiber_set_error(ERANGE);
+		//acl_fiber_set_error(ERANGE);
 		return 0;
 	}
 
@@ -235,7 +235,7 @@ int event_add_write(EVENT *ev, FILE_EVENT *fe, event_proc *proc)
 
 	if (fe->fd >= (socket_t) ev->setsize) {
 		msg_error("fd: %d >= setsize: %d", fe->fd, (int) ev->setsize);
-		acl_fiber_set_error(ERANGE);
+		//acl_fiber_set_error(ERANGE);
 		return 0;
 	}
 

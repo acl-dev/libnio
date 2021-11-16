@@ -203,7 +203,7 @@ EVENT *event_poll_create(int size)
 	EVENT_POLL *ep = (EVENT_POLL *) mem_calloc(1, sizeof(EVENT_POLL));
 
 	// override size with system open limit setting
-	size      = 10240; //open_limit(0);
+	size      = open_limit(0);
 	ep->size  = size;
 	ep->pfds  = (struct pollfd *) mem_calloc(size, sizeof(struct pollfd));
 	ep->files = (FILE_EVENT**) mem_calloc(size, sizeof(FILE_EVENT*));

@@ -169,7 +169,7 @@ static int kqueue_wait(EVENT *ev, int timeout)
 	ek->nchanges = 0;
 
 	if (n == -1) {
-		if (acl_fiber_last_error() == FIBER_EINTR) {
+		if (last_error() == FIBER_EINTR) {
 			return 0;
 		}
 		msg_fatal("%s: kqueue error %s", __FUNCTION__, last_serror());
