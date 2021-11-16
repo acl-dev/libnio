@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 
 #include "event.h"
+#include "iostuff.h"
 
 static socket_t listen_addr(const char *ip, int port) {
 	struct sockaddr_in sa;
@@ -27,24 +28,30 @@ static socket_t listen_addr(const char *ip, int port) {
 		close(lfd);
 		return -1;
 	}
-	if (listen(lfd, 128) < 0) {
+	if (listen(lfd, 8192) < 0) {
 		close(lfd);
 		return -1;
 	}
 	return lfd;
 }
 
+static int __nclosed = 0;
+static int __ncalled = 0;
+
 static void read_callback(EVENT *ev, FILE_EVENT *fe) {
+	++__ncalled;
 	char buf[1024];
 	int ret = read(fe->fd, buf, sizeof(buf));
 	if (ret <= 0) {
 		event_close(ev, fe);
 		close(fe->fd);
 		file_event_free(fe);
+		printf(">>>>closed: %d, called=%d\r\n", ++__nclosed, __ncalled);
 	} else if (write(fe->fd, buf, ret) <= 0) {
 		event_close(ev, fe);
 		close(fe->fd);
 		file_event_free(fe);
+		printf(">>>>closed: %d, called=%d\r\n", ++__nclosed, __ncalled);
 	}
 }
 
@@ -56,6 +63,7 @@ static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
 	if (cfd == -1) {
 		printf("accept error %s\r\n", strerror(errno));
 	} else {
+		non_blocking(cfd, 1);
 		fe = file_event_alloc(cfd);
 		event_add_read(ev, fe, read_callback);
 	}
@@ -95,14 +103,15 @@ int main(int argc, char *argv[]) {
 
 	printf("listen on %s:%d\r\n", addr, port);
 
-	EVENT *ev = event_create(10240, EVENT_EVENT_KERNEL);
+	EVENT *ev = event_create(102400, EVENT_EVENT_KERNEL);
+	//EVENT *ev = event_create(10240, EVENT_EVENT_POLL);
 	assert(ev);
 
 	FILE_EVENT *fe = file_event_alloc(lfd);
 	event_add_read(ev, fe, listen_callback);
 
 	while (1) {
-		event_process(ev, 1);
+		event_process(ev, 1000);
 	}
 	return 0;
 }

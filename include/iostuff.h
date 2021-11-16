@@ -12,6 +12,8 @@ extern "C" {
  */
 int open_limit(int limit);
 
+int non_blocking(socket_t fd, int on);
+
 #ifdef	__cplusplus
 }
 #endif

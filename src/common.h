@@ -5,6 +5,6 @@
 #include "common/iterator.h"
 #include "common/array.h"
 #include "common/memory.h"
-#include "common/iostuff.h"
+#include "iostuff.h"
 
 #endif
