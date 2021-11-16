@@ -7,20 +7,6 @@
 #include <sys/epoll.h>
 #endif
 
-#if defined(USE_FAST_TIME)
-#define SET_TIME(x) do { \
-    struct timeval _tv; \
-    acl_fiber_gettimeofday(&_tv, NULL); \
-    (x) = ((long long) _tv.tv_sec) * 1000 + ((long long) _tv.tv_usec)/ 1000; \
-} while (0)
-#else
-#define SET_TIME(x) do { \
-struct timeval _tv; \
-    gettimeofday(&_tv, NULL); \
-    (x) = ((long long) _tv.tv_sec) * 1000 + ((long long) _tv.tv_usec)/ 1000; \
-} while (0)
-#endif
-
 typedef struct FILE_EVENT   FILE_EVENT;
 typedef struct EVENT        EVENT;
 
@@ -55,7 +41,6 @@ typedef struct IOCP_EVENT IOCP_EVENT;
  */
 struct FILE_EVENT {
 	RING       me;
-	ACL_FIBER *fiber;
 	socket_t   fd;
 	int id;
 	unsigned status;
@@ -126,7 +111,6 @@ struct POLLFD {
 
 struct POLL_EVENT {
 	RING       me;
-	ACL_FIBER *fiber;
 	poll_proc *proc;
 	int        nready;
 	int        nfds;
@@ -147,7 +131,6 @@ struct EPOLL_CTX {
 
 struct EPOLL_EVENT {
 	RING        me;
-	ACL_FIBER  *fiber;
 	epoll_proc *proc;
 	size_t      nfds;
 	EPOLL_CTX **fds;
@@ -199,8 +182,7 @@ FILE_EVENT *file_event_alloc(socket_t fd);
 void file_event_free(FILE_EVENT *fe);
 
 /* event.c */
-void event_set(int event_mode);
-EVENT *event_create(int size);
+EVENT *event_create(int size, int event_type);
 const char *event_name(EVENT *ev);
 acl_handle_t event_handle(EVENT *ev);
 ssize_t event_size(EVENT *ev);

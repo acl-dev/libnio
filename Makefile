@@ -140,8 +140,8 @@ OBJ = $(patsubst %.c, $(OBJ_PATH_DST)/%.o, $(notdir $(SRC)))
 
 ###########################################################
 
-STATIC_LIBNAME = libfiber.a
-SHARED_LIBNAME = libfiber.so
+STATIC_LIBNAME = libnet_event.a
+SHARED_LIBNAME = libnet_event.so
 
 ###########################################################
 

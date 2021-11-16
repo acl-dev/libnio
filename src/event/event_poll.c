@@ -159,7 +159,7 @@ static int poll_wait(EVENT *ev, int timeout)
 	}
 
 	for (i = 0; i < ep->count; i++) {
-		FILE_EVENT *fe     = ep->files[i];
+		FILE_EVENT *fe = ep->files[i];
 		array_append(ep->ready, fe);
 	}
 

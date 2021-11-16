@@ -9,26 +9,11 @@
 #include "event/event_iocp.h"
 #include "event.h"
 
-static __thread int __event_mode = FIBER_EVENT_KERNEL;
-
-void event_set(int event_mode)
-{
-	switch (__event_mode) {
-	case FIBER_EVENT_KERNEL:
-	case FIBER_EVENT_POLL:
-	case FIBER_EVENT_SELECT:
-		__event_mode = event_mode;
-		break;
-	default:
-		break;
-	}
-}
-
-EVENT *event_create(int size)
+EVENT *event_create(int size, int event_type)
 {
 	EVENT *ev = NULL;
 
-	switch (__event_mode) {
+	switch (event_type) {
 	case FIBER_EVENT_POLL:
 #ifdef	HAS_POLL
 		ev = event_poll_create(size);
@@ -138,51 +123,11 @@ static int checkfd(EVENT *ev, FILE_EVENT *fe)
 	 * should be a file.
 	 */
 	if (lseek(fe->fd, (off_t) 0, SEEK_SET) == -1 && errno == ESPIPE) {
-		//acl_fiber_set_error(0);
 		return 0;
 	} else {
-		//acl_fiber_set_error(0);
 		return -1;
 	}
 #endif
-}
-#endif
-
-#if 0
-static int check_read_wait(EVENT *ev, FILE_EVENT *fe)
-{
-	if (ev->add_read(ev, fe) == -1) {
-		fe->type = TYPE_NOSOCK;
-		return -1;
-	}
-
-	if (ev->del_read(ev, fe) == -1) {
-		fe->type = TYPE_NOSOCK;
-		msg_error("%s(%d): del_read failed, fd=%d",
-			__FUNCTION__, __LINE__, fe->fd);
-		return -1;
-	}
-
-	fe->type = TYPE_SOCK;
-	return 0;
-}
-
-static int check_write_wait(EVENT *ev, FILE_EVENT *fe)
-{
-	if (ev->add_write(ev, fe) == -1) {
-		fe->type = TYPE_NOSOCK;
-		return -1;
-	}
-
-	if (ev->del_write(ev, fe) == -1) {
-		fe->type = TYPE_NOSOCK;
-		msg_error("%s(%d): del_write failed, fd=%d",
-			__FUNCTION__, __LINE__, fe->fd);
-		return -1;
-	}
-
-	fe->type = TYPE_SOCK;
-	return 0;
 }
 #endif
 
@@ -196,7 +141,6 @@ int event_add_read(EVENT *ev, FILE_EVENT *fe, event_proc *proc)
 
 	if (fe->fd >= (socket_t) ev->setsize) {
 		msg_error("fd: %d >= setsize: %d", fe->fd, (int) ev->setsize);
-		//acl_fiber_set_error(ERANGE);
 		return 0;
 	}
 
@@ -235,7 +179,6 @@ int event_add_write(EVENT *ev, FILE_EVENT *fe, event_proc *proc)
 
 	if (fe->fd >= (socket_t) ev->setsize) {
 		msg_error("fd: %d >= setsize: %d", fe->fd, (int) ev->setsize);
-		//acl_fiber_set_error(ERANGE);
 		return 0;
 	}
 
