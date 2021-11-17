@@ -255,68 +255,6 @@ static int iocp_add_read(EVENT_IOCP *ev, FILE_EVENT *fe)
 	}
 }
 
-#if 0
-static int iocp_add_connect(EVENT_IOCP *ev, FILE_EVENT *fe)
-{
-	DWORD SentLen = 0;
-	struct sockaddr_in addr;
-	LPFN_CONNECTEX lpfnConnectEx = NULL;
-	GUID  GuidConnectEx = WSAID_CONNECTEX;
-	int   dwErr, dwBytes;
-	BOOL  ret;
-	static const char *any_ip = "127.0.0.1";
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family      = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(any_ip);
-	addr.sin_port        = htons(0);
-
-	if (bind(fe->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		msg_error("%s(%d): bind local ip(%s) error(%s, %d), sock: %u",
-			__FUNCTION__, __LINE__, any_ip, last_serror(),
-			last_error(), (unsigned) fe->fd);
-	}
-
-	dwErr = WSAIoctl(fe->fd,
-		SIO_GET_EXTENSION_FUNCTION_POINTER,
-		&GuidConnectEx,
-		sizeof(GuidConnectEx),
-		&lpfnConnectEx,
-		sizeof(lpfnConnectEx),
-		&dwBytes,
-		NULL,
-		NULL);
-
-	if(dwErr  ==  SOCKET_ERROR) {
-		msg_fatal("%s(%d): WSAIoctl error(%s)",
-			__FUNCTION__, __LINE__, last_serror());
-	}
-
-	ret = lpfnConnectEx(fe->fd,
-		(const struct sockaddr *) &fe->peer_addr,
-		sizeof(struct sockaddr),
-		NULL,
-		0,
-		NULL,
-		&fe->writer->overlapped);
-
-	if (ret == TRUE) {
-		fe->mask |= EVENT_WRITE;
-		return 1;
-	} else if (last_error() == ERROR_IO_PENDING) {
-		fe->mask |= EVENT_WRITE;
-		return 1;
-	} else {
-		msg_warn("%s(%d): ConnectEx error(%s), sock(%u)",
-			__FUNCTION__, __LINE__, last_serror(), fe->fd);
-		fe->mask |= EVENT_ERROR;
-		assert(fe->writer);
-		array_append(ev->events, fe->writer);
-		return -1;
-	}
-}
-#endif
-
 static int iocp_add_write(EVENT_IOCP *ev, FILE_EVENT *fe)
 {
 	DWORD sendBytes;
