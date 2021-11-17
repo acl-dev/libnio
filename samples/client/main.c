@@ -15,29 +15,29 @@
 #include "iostuff.h"
 
 typedef struct {
-    int max_loop;
-    int cocurrent;
-    int stop;
-    int count;
+	int max_loop;
+	int cocurrent;
+	int stop;
+	int count;
 } gio_ctx_t;
 
 typedef struct {
-    gio_ctx_t *gctx;
+	gio_ctx_t *gctx;
 } io_ctx_t;
 
 static double stamp_sub(const struct timeval *from, const struct timeval *sub) {
-    struct timeval res;
+	struct timeval res;
 
-    memcpy(&res, from, sizeof(struct timeval));
+	memcpy(&res, from, sizeof(struct timeval));
 
-    res.tv_usec -= sub->tv_usec;
-    if (res.tv_usec < 0) {
-        --res.tv_sec;
-        res.tv_usec += 1000000;
-    }
+	res.tv_usec -= sub->tv_usec;
+	if (res.tv_usec < 0) {
+		--res.tv_sec;
+		res.tv_usec += 1000000;
+	}
 
-    res.tv_sec -= sub->tv_sec;
-    return res.tv_sec * 1000.0 + res.tv_usec / 1000.0;
+	res.tv_sec -= sub->tv_sec;
+	return res.tv_sec * 1000.0 + res.tv_usec / 1000.0;
 }
 
 static socket_t connect_server(const char *ip, int port) {
@@ -49,58 +49,58 @@ static socket_t connect_server(const char *ip, int port) {
 	sa.sin_addr.s_addr = inet_addr(ip);
 
 	int fd = socket(PF_INET, SOCK_STREAM, 0);
-    non_blocking(fd, 1);
-    tcp_nodelay(fd, 0);
+	non_blocking(fd, 1);
+	tcp_nodelay(fd, 0);
 
 	int on = 1;
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
 	if (connect(fd, (const struct sockaddr*) &sa, sizeof(sa)) < 0) {
-        if (errno != EINPROGRESS && errno != EISCONN) {
-            close(fd);
-            return -1;
-        }
+		if (errno != EINPROGRESS && errno != EISCONN) {
+			close(fd);
+			return -1;
+		}
 	}
 
 	return fd;
 }
 
 static void close_connection(EVENT *ev, FILE_EVENT *fe) {
-    io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
-    event_close(ev, fe);
-    close(fe->fd);
-    file_event_free(fe);
+	io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
+	event_close(ev, fe);
+	close(fe->fd);
+	file_event_free(fe);
 
-    if (--ctx->gctx->cocurrent <= 0) {
-        ctx->gctx->stop = 1;
-    }
+	if (--ctx->gctx->cocurrent <= 0) {
+		ctx->gctx->stop = 1;
+	}
 
-    free(ctx);
+	free(ctx);
 }
 
 static void read_callback(EVENT *ev, FILE_EVENT *fe) {
-    io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
+	io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
 	char buf[1024];
 	int ret = read(fe->fd, buf, sizeof(buf) - 1);
 	if (ret <= 0) {
-        close_connection(ev, fe);
-    } else if (++ctx->gctx->count >= ctx->gctx->max_loop) {
-        printf("All over, stop now!\r\n");
-        ctx->gctx->stop = 1;
+		close_connection(ev, fe);
+	} else if (++ctx->gctx->count >= ctx->gctx->max_loop) {
+		printf("All over, stop now!\r\n");
+		ctx->gctx->stop = 1;
 	} else if (write(fe->fd, buf, ret) <= 0) {
-        close_connection(ev, fe);
+		close_connection(ev, fe);
 	} else if (ctx->gctx->count <= 10) {
-        buf[ret] = 0;
-        printf("%s", buf);
-    }
+		buf[ret] = 0;
+		printf("%s", buf);
+	}
 }
 
 static void connect_callback(EVENT *ev, FILE_EVENT *fe) {
-    event_del_write(ev, fe);
+	event_del_write(ev, fe);
 
-    const char *s = "hello world!\r\n";
-    if (write(fe->fd, s, strlen(s)) == -1) {
-        close_connection(ev, fe);
+	const char *s = "hello world!\r\n";
+	if (write(fe->fd, s, strlen(s)) == -1) {
+		close_connection(ev, fe);
 	} else {
 		event_add_read(ev, fe, read_callback);
 	}
@@ -108,19 +108,19 @@ static void connect_callback(EVENT *ev, FILE_EVENT *fe) {
 
 static void usage(const char *procname) {
 	printf("usage: %s -s server_ip\r\n"
-            " -p listen_port\r\n"
-            " -t event_type[kernel|poll|select]\r\n"
-            " -c cocurrent\r\n"
-            " -n max_loop\r\n"
-            , procname);
+			" -p listen_port\r\n"
+			" -t event_type[kernel|poll|select]\r\n"
+			" -c cocurrent\r\n"
+			" -n max_loop\r\n"
+			, procname);
 }
 
 int main(int argc, char *argv[]) {
 	int ch, port = 8088, event_type = EVENT_TYPE_KERNEL;
-    int cocurrent = 10, max_loop = 100;
+	int cocurrent = 10, max_loop = 100;
 	char addr[64], event_type_s[64];
 
-    signal(SIGPIPE, SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 
 	while ((ch = getopt(argc, argv, "hs:p:t:c:n:")) > 0) {
@@ -134,64 +134,64 @@ int main(int argc, char *argv[]) {
 		case 'p':
 			port = atoi(optarg);
 			break;
-        case 't':
-            snprintf(event_type_s, sizeof(event_type_s), "%s", optarg);
-            break;
-        case 'c':
-            cocurrent = atoi(optarg);
-            break;
-        case 'n':
-            max_loop = atoi(optarg);
-            break;
+		case 't':
+			snprintf(event_type_s, sizeof(event_type_s), "%s", optarg);
+			break;
+		case 'c':
+			cocurrent = atoi(optarg);
+			break;
+		case 'n':
+			max_loop = atoi(optarg);
+			break;
 		default:
 			break;
 		}
 	}
 
-    if (strcasecmp(event_type_s, "kernel") == 0) {
-        event_type = EVENT_TYPE_KERNEL;
-    } else if (strcasecmp(event_type_s, "poll") == 0) {
-        event_type = EVENT_TYPE_POLL;
-    } else if (strcasecmp(event_type_s, "select") == 0) {
-        event_type = EVENT_TYPE_SELECT;
-    }
+	if (strcasecmp(event_type_s, "kernel") == 0) {
+		event_type = EVENT_TYPE_KERNEL;
+	} else if (strcasecmp(event_type_s, "poll") == 0) {
+		event_type = EVENT_TYPE_POLL;
+	} else if (strcasecmp(event_type_s, "select") == 0) {
+		event_type = EVENT_TYPE_SELECT;
+	}
 
-    EVENT *ev = event_create(1024000, event_type);
-    assert(ev);
+	EVENT *ev = event_create(1024000, event_type);
+	assert(ev);
 
-    gio_ctx_t *gctx = calloc(1, sizeof(gio_ctx_t));
-    gctx->max_loop = max_loop;
-    gctx->cocurrent = cocurrent;
+	gio_ctx_t *gctx = calloc(1, sizeof(gio_ctx_t));
+	gctx->max_loop = max_loop;
+	gctx->cocurrent = cocurrent;
 
-    int i;
-    for (i = 0; i < cocurrent; i++) {
-        socket_t fd = connect_server(addr, port);
-        if (fd == -1) {
-            printf("connect %s:%d error %s\r\n", addr, port, strerror(errno));
-            break;
-        }
+	int i;
+	for (i = 0; i < cocurrent; i++) {
+		socket_t fd = connect_server(addr, port);
+		if (fd == -1) {
+			printf("connect %s:%d error %s\r\n", addr, port, strerror(errno));
+			break;
+		}
 
-        FILE_EVENT *fe = file_event_alloc(fd);
-        io_ctx_t *ctx = calloc(1, sizeof(io_ctx_t));
-        ctx->gctx = gctx;
-        fe->ctx   = ctx;
-        event_add_write(ev, fe, connect_callback);
-    }
+		FILE_EVENT *fe = file_event_alloc(fd);
+		io_ctx_t *ctx = calloc(1, sizeof(io_ctx_t));
+		ctx->gctx = gctx;
+		fe->ctx   = ctx;
+		event_add_write(ev, fe, connect_callback);
+	}
 
-    struct timeval begin;
-    gettimeofday(&begin, NULL);
+	struct timeval begin;
+	gettimeofday(&begin, NULL);
 
 	while (!gctx->stop) {
 		event_wait(ev, 1000);
 	}
 
-    struct timeval end;
-    gettimeofday(&end, NULL);
+	struct timeval end;
+	gettimeofday(&end, NULL);
 
-    double cost = stamp_sub(&end, &begin);
-    double speed = ((long long) gctx->count * 1000) / (cost >= 0.01 ? cost : 0.01);
-    printf("All over, count=%d, cost=%.2f ms, speed=%.2f\r\n",
-            gctx->count, cost, speed);
-    free(gctx);
+	double cost = stamp_sub(&end, &begin);
+	double speed = ((long long) gctx->count * 1000) / (cost >= 0.01 ? cost : 0.01);
+	printf("All over, count=%d, cost=%.2f ms, speed=%.2f\r\n",
+			gctx->count, cost, speed);
+	free(gctx);
 	return 0;
 }

@@ -58,9 +58,9 @@ static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
 	if (cfd == -1) {
 		printf("accept error %s\r\n", strerror(errno));
 	} else {
-        printf("accept one fd %d\r\n", cfd);
+		printf("accept one fd %d\r\n", cfd);
 		non_blocking(cfd, 1);
-        tcp_nodelay(cfd, 1);
+		tcp_nodelay(cfd, 1);
 		fe = file_event_alloc(cfd);
 		event_add_read(ev, fe, read_callback);
 	}
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 	int ch, port = 8088, event_type = EVENT_TYPE_KERNEL;
 	char addr[64], event_type_s[64];
 
-    signal(SIGPIPE, SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);
 
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 
@@ -89,9 +89,9 @@ int main(int argc, char *argv[]) {
 		case 'p':
 			port = atoi(optarg);
 			break;
-        case 't':
-            snprintf(event_type_s, sizeof(event_type_s), "%s", optarg);
-            break;
+		case 't':
+			snprintf(event_type_s, sizeof(event_type_s), "%s", optarg);
+			break;
 		default:
 			break;
 		}
@@ -103,17 +103,17 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-    printf("FILE_EVENT size is %zd\r\n", sizeof(FILE_EVENT));
+	printf("FILE_EVENT size is %zd\r\n", sizeof(FILE_EVENT));
 
 	printf("listen on %s:%d\r\n", addr, port);
 
-    if (strcasecmp(event_type_s, "kernel") == 0) {
-        event_type = EVENT_TYPE_KERNEL;
-    } else if (strcasecmp(event_type_s, "poll") == 0) {
-        event_type = EVENT_TYPE_POLL;
-    } else if (strcasecmp(event_type_s, "select") == 0) {
-        event_type = EVENT_TYPE_SELECT;
-    }
+	if (strcasecmp(event_type_s, "kernel") == 0) {
+		event_type = EVENT_TYPE_KERNEL;
+	} else if (strcasecmp(event_type_s, "poll") == 0) {
+		event_type = EVENT_TYPE_POLL;
+	} else if (strcasecmp(event_type_s, "select") == 0) {
+		event_type = EVENT_TYPE_SELECT;
+	}
 
 	EVENT *ev = event_create(1024000, event_type);
 	assert(ev);
