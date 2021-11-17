@@ -67,7 +67,10 @@ static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
 }
 
 static void usage(const char *procname) {
-	printf("usage: %s -s listen_ip -p listen_port -t event_type[kernel|poll|select]\r\n", procname);
+	printf("usage: %s -s listen_ip\r\n"
+		" -p listen_port\r\n"
+		" -t event_type[kernel|poll|select]\r\n"
+		, procname);
 }
 
 int main(int argc, char *argv[]) {

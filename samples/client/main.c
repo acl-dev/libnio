@@ -108,11 +108,11 @@ static void connect_callback(EVENT *ev, FILE_EVENT *fe) {
 
 static void usage(const char *procname) {
 	printf("usage: %s -s server_ip\r\n"
-			" -p listen_port\r\n"
-			" -t event_type[kernel|poll|select]\r\n"
-			" -c cocurrent\r\n"
-			" -n max_loop\r\n"
-			, procname);
+		" -p listen_port\r\n"
+		" -t event_type[kernel|poll|select]\r\n"
+		" -c cocurrent\r\n"
+		" -n max_loop\r\n"
+		, procname);
 }
 
 int main(int argc, char *argv[]) {
