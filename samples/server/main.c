@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #include "event.h"
 #include "iostuff.h"
@@ -57,7 +58,9 @@ static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
 	if (cfd == -1) {
 		printf("accept error %s\r\n", strerror(errno));
 	} else {
+        printf("accept one fd %d\r\n", cfd);
 		non_blocking(cfd, 1);
+        tcp_nodelay(cfd, 1);
 		fe = file_event_alloc(cfd);
 		event_add_read(ev, fe, read_callback);
 	}
@@ -70,6 +73,8 @@ static void usage(const char *procname) {
 int main(int argc, char *argv[]) {
 	int ch, port = 8088, event_type = EVENT_TYPE_KERNEL;
 	char addr[64], event_type_s[64];
+
+    signal(SIGPIPE, SIG_IGN);
 
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 

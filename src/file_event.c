@@ -7,6 +7,7 @@ void file_event_init(FILE_EVENT *fe, socket_t fd)
 {
 	ring_init(&fe->me);
 	fe->fd     = fd;
+    fe->ctx    = NULL;
 	fe->id     = -1;
 	fe->status = STATUS_NONE;
 	fe->type   = TYPE_NONE;

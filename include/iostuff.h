@@ -14,6 +14,8 @@ int open_limit(int limit);
 
 int non_blocking(socket_t fd, int on);
 
+void tcp_nodelay(socket_t fd, int onoff);
+
 #ifdef	__cplusplus
 }
 #endif

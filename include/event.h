@@ -43,6 +43,7 @@ typedef struct IOCP_EVENT IOCP_EVENT;
 struct FILE_EVENT {
 	RING       me;
 	socket_t   fd;
+    void      *ctx;
 	int id;
 	unsigned status;
 #define	STATUS_NONE		0
