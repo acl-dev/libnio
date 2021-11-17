@@ -95,7 +95,7 @@ ifneq ($(SYSPATH),)
 endif
 ###########################################################
 
-EVENT_PATH = ../..
+EVENT_PATH = ../../c
 EVENT_INC  = $(EVENT_PATH)/include
 EVENT_LIB  = $(EVENT_PATH)/lib
 
