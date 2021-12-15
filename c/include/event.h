@@ -155,12 +155,6 @@ struct EVENT {
 #define EVENT_F_IOCP (1 << 0)
 #define EVENT_IS_IOCP(x) ((x)->flag & EVENT_F_IOCP)
 
-#ifdef HAS_POLL
-	RING   poll_list;
-#endif
-#ifdef HAS_EPOLL
-	RING   epoll_list;
-#endif
 	unsigned waiter;
 	acl_handle_t (*handle)(EVENT *);
 

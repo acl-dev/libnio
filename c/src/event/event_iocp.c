@@ -132,7 +132,6 @@ static int iocp_close_sock(EVENT_IOCP *ev, FILE_EVENT *fe)
 		}
 	}
 
-	//printf("------------fdcount=%d------------\r\n", ev->event.fdcount);
 	return 1;
 }
 

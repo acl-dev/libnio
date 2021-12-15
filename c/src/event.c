@@ -52,13 +52,6 @@ EVENT *event_create(int size, int event_type)
 	ev->maxfd   = -1;
 	ev->waiter  = 0;
 
-#ifdef HAS_POLL
-	ring_init(&ev->poll_list);
-#endif
-
-#ifdef HAS_EPOLL
-	ring_init(&ev->epoll_list);
-#endif
 	return ev;
 }
 
@@ -265,42 +258,6 @@ static void event_prepare(EVENT *ev)
 	ring_init(&ev->events);
 }
 
-#define TO_APPL	ring_to_appl
-
-#ifdef HAS_POLL
-static void event_process_poll(EVENT *ev)
-{
-	while (1) {
-		POLL_EVENT *pe;
-		RING *head = ring_pop_head(&ev->poll_list);
-
-		if (head == NULL) {
-			break;
-		}
-
-		pe = TO_APPL(head, POLL_EVENT, me);
-		pe->proc(ev, pe);
-	}
-
-	ring_init(&ev->poll_list);
-}
-#endif
-
-#ifdef	HAS_EPOLL
-static void event_process_epoll(EVENT *ev)
-{
-	while (1) {
-		EPOLL_EVENT *ee;
-		RING *head = ring_pop_head(&ev->epoll_list);
-		if (head == NULL) {
-			break;
-		}
-		ee = TO_APPL(head, EPOLL_EVENT, me);
-		ee->proc(ev, ee);
-	}
-}
-#endif
-
 int event_wait(EVENT *ev, int timeout)
 {
 	int ret;
@@ -324,14 +281,6 @@ int event_wait(EVENT *ev, int timeout)
 
 	event_prepare(ev);
 	ret = ev->event_wait(ev, timeout);
-
-#ifdef HAS_POLL
-	event_process_poll(ev);
-#endif
-
-#ifdef	HAS_EPOLL
-	event_process_epoll(ev);
-#endif
 
 	return ret;
 }
