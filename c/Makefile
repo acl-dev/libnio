@@ -33,8 +33,9 @@ CFLAGS = -c -g -W \
 #       Linux, SunOS, Solaris, BSD variants, AIX, HP-UX
 SYSLIB =
 CHECKSYSRES = @echo "Unknow system type!";exit 1
-UNIXNAME = $(shell uname -sm)
 UNIXTYPE = LINUX
+OSNAME   = $(shell uname -s)
+ARCH     = $(shell uname -m)
 
 ifeq ($(CC),)
         CC = gcc
@@ -73,38 +74,38 @@ ifeq ($(findstring clang++, $(CC)), clang++)
 endif
 
 # For FreeBSD
-ifeq ($(findstring FreeBSD, $(UNIXNAME)), FreeBSD)
+ifeq ($(findstring FreeBSD, $(OSNAME)), FreeBSD)
 	UNIXTYPE = FREEBSD
 endif
 
 # For Darwin
-ifeq ($(findstring Darwin, $(UNIXNAME)), Darwin)
+ifeq ($(findstring Darwin, $(OSNAME)), Darwin)
 	CFLAGS += -DMACOSX -Wno-invalid-source-encoding \
 		  -Wno-invalid-offsetof \
 		  -Wno-deprecated-declarations
 endif
 
 # For Linux
-ifeq ($(findstring Linux, $(UNIXNAME)), Linux)
+ifeq ($(findstring Linux, $(OSNAME)), Linux)
 	UNIXTYPE = LINUX
 endif
 
 # For MINGW
-ifeq ($(findstring MINGW, $(UNIXNAME)), MINGW)
+ifeq ($(findstring MINGW, $(OSNAME)), MINGW)
 	CFLAGS += -DLINUX2 -DMINGW
 endif
 
 # For MSYS
-ifeq ($(findstring MSYS, $(UNIXNAME)), MSYS)
+ifeq ($(findstring MSYS, $(OSNAME)), MSYS)
 	CFLAGS += -DLINUX2 -DMINGW
 endif
 
 # For SunOS
-ifeq ($(findstring SunOS, $(UNIXNAME)), SunOS)
-	ifeq ($(findstring 86, $(UNIXNAME)), 86)
+ifeq ($(findstring SunOS, $(OSNAME)), SunOS)
+	ifeq ($(findstring 86, $(ARCH)), 86)
 		SYSLIB = -lsocket -lnsl -lrt
 	endif
-	ifeq ($(findstring sun4u, $(UNIXNAME)), sun4u)
+	ifeq ($(findstring sun4u, $(ARCH)), sun4u)
 		SYSLIB = -lsocket -lnsl -lrt
 	endif
 	CFLAGS += -DSUNOS5
@@ -112,7 +113,7 @@ ifeq ($(findstring SunOS, $(UNIXNAME)), SunOS)
 endif
 
 # For HP-UX
-ifeq ($(findstring HP-UX, $(UNIXNAME)), HP-UX)
+ifeq ($(findstring HP-UX, $(OSNAME)), HP-UX)
 	CFLAGS += -DHP_UX -DHPUX11
 	UNIXTYPE = HPUX
 endif
@@ -145,7 +146,7 @@ SHARED_LIBNAME = libnet_event.so
 
 ###########################################################
 
-.PHONY = static shared clean
+.PHONY = static shared clean install uninstall
 COMPILE = $(CC) $(CFLAGS) -O3
 COMPILE_FIBER = $(CC) $(CFLAGS) 
 
@@ -200,3 +201,23 @@ clean cl:
 	rm -f $(LIB_PATH_DST)/${STATIC_LIBNAME}
 	rm -f $(LIB_PATH_DST)/${SHARED_LIBNAME}
 	rm -f $(OBJ)
+
+LIB_PATH = /usr/local/lib
+INC_PATH = /usr/local/include/net_event
+
+install:
+	@(echo "")
+	@(echo "Begin to copy files...")
+	$(shell mkdir -p $(INC_PATH))
+	@if test $(OSNAME) = "Linux" || test "$(OSNAME)" = "Darwin"; then \
+		echo "Coping libnet_event.a to $(LIB_PATH)"; \
+		cp lib/$(STATIC_LIBNAME) $(LIB_PATH)/$(STATIC_LIBNAME); \
+		echo "Coping net_event's headers to $(INC_PATH)/"; \
+		cp include/* $(INC_PATH)/; \
+	fi
+
+uninstall:
+	@(echo "")
+	@(echo "Begin to uninstall files...")
+	rm -f $(LIB_PATH)/$(STATIC_LIBNAME)
+	rm -rf $(INC_PATH)
