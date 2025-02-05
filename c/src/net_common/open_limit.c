@@ -1,12 +1,12 @@
 #include "stdafx.h"
-#include "msg.h"
-#include "iostuff.h"
+#include "net_msg.h"
+#include "net_iostuff.h"
 
 #ifdef SYS_WIN
 
 static int __default_limit = 10240;
 
-int open_limit(int limit)
+int net_open_limit(int limit)
 {
 	if (limit <= 0) {
 		limit = __default_limit;
@@ -26,7 +26,7 @@ int open_limit(int limit)
 
 /* open_limit - set/query file descriptor limit */
 
-int open_limit(int limit)
+int net_open_limit(int limit)
 {
 	int   rlim_cur = -1;
 
@@ -39,8 +39,8 @@ int open_limit(int limit)
 #else
 		rlim_cur = getdtablesize();
 #endif
-		msg_warn("%s(%d): getrlimit error: %d, use: %d",
-			__FUNCTION__, __LINE__, last_error(), rlim_cur);
+		net_msg_warn("%s(%d): getrlimit error: %d, use: %d",
+			__FUNCTION__, __LINE__, net_last_error(), rlim_cur);
 		return rlim_cur;
 	}
 
@@ -56,9 +56,9 @@ int open_limit(int limit)
 			rl.rlim_cur = limit;
 		}
 		if (setrlimit(RLIMIT_NOFILE, &rl) < 0) {
-			msg_warn("%s(%d): setrlimit error: %d, limit: %d,"
+			net_msg_warn("%s(%d): setrlimit error: %d, limit: %d,"
 				" curr: %d", __FUNCTION__, __LINE__,
-				last_error(), limit, rlim_cur);
+				net_last_error(), limit, rlim_cur);
 			return rlim_cur;
 		} else {
 			return (int) rl.rlim_cur;
@@ -67,9 +67,9 @@ int open_limit(int limit)
 		rlim_cur = (int) rl.rlim_cur;
 		rl.rlim_cur = rl.rlim_max;
 		if (setrlimit(RLIMIT_NOFILE, &rl) < 0) {
-			msg_warn("%s(%d): setrlimit error: %d,"
+			net_msg_warn("%s(%d): setrlimit error: %d,"
 				" cur: %d, max: %d", __FUNCTION__, __LINE__,
-				last_error(), (int) rl.rlim_cur,
+				net_last_error(), (int) rl.rlim_cur,
 				(int) rl.rlim_max);
 			return rlim_cur;
 		}
@@ -82,7 +82,7 @@ int open_limit(int limit)
 #else
 	rlim_cur = getdtablesize();
 	if (rlim_cur < 0) {
-		msg_error("%s(%d): getdtablesize(%d) < 0, limit: %d",
+		net_msg_error("%s(%d): getdtablesize(%d) < 0, limit: %d",
 			__FUNCTION__, __LINE__, rlim_cur, limit);
 	}
 	return rlim_cur;

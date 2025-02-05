@@ -7,7 +7,6 @@
 #pragma comment(lib, "Kernel32.lib")
 #pragma comment(lib, "Mswsock.lib")
 
-#include "event.h"
 #include "event_iocp.h"
 
 typedef BOOL (PASCAL FAR* LPFN_CONNECTEX) (
@@ -21,8 +20,8 @@ typedef BOOL (PASCAL FAR* LPFN_CONNECTEX) (
 );
 
 typedef struct EVENT_IOCP {
-	EVENT  event;
-	FILE_EVENT **files;
+	NET_EVENT  event;
+	NET_FILE **files;
 	int    size;
 	int    count;
 	HANDLE h_iocp;
@@ -32,20 +31,20 @@ typedef struct EVENT_IOCP {
 struct IOCP_EVENT {
 	OVERLAPPED overlapped;
 	int   type;
-#define	IOCP_EVENT_READ		(1 << 0)
-#define IOCP_EVENT_WRITE	(1 << 2)
+#define	IOCP_NET_EVENT_READ		(1 << 0)
+#define IOCP_NET_EVENT_WRITE	(1 << 2)
 #define IOCP_EVENT_DEAD		(1 << 3)
 #define	IOCP_EVENT_POLLR	(1 << 4)
 #define	IOCP_EVENT_POLLW	(1 << 4)
 	int   refer;
-	FILE_EVENT *fe;
+	NET_FILE *fe;
 	event_proc *proc;
 
 #define ACCEPT_ADDRESS_LENGTH ((sizeof(struct sockaddr_in) + 16))
 	char  myAddrBlock[ACCEPT_ADDRESS_LENGTH * 2];
 };
 
-static void iocp_remove(EVENT_IOCP *ev, FILE_EVENT *fe)
+static void iocp_remove(EVENT_IOCP *ev, NET_FILE *fe)
 {
 	if (fe->id < --ev->count) {
 		ev->files[fe->id]     = ev->files[ev->count];
@@ -56,7 +55,7 @@ static void iocp_remove(EVENT_IOCP *ev, FILE_EVENT *fe)
 	ev->event.fdcount--;
 }
 
-static int iocp_close_sock(EVENT_IOCP *ev, FILE_EVENT *fe)
+static int iocp_close_sock(EVENT_IOCP *ev, NET_FILE *fe)
 {
 	if (fe->h_iocp != NULL) {
 		fe->h_iocp = NULL;
@@ -135,7 +134,7 @@ static int iocp_close_sock(EVENT_IOCP *ev, FILE_EVENT *fe)
 	return 1;
 }
 
-static void iocp_check(EVENT_IOCP *ev, FILE_EVENT *fe)
+static void iocp_check(EVENT_IOCP *ev, NET_FILE *fe)
 {
 	if (fe->id == -1) {
 		assert(ev->count < ev->size);
@@ -151,13 +150,13 @@ static void iocp_check(EVENT_IOCP *ev, FILE_EVENT *fe)
 		fe->h_iocp = CreateIoCompletionPort((HANDLE) fe->fd,
 			ev->h_iocp, (ULONG_PTR) fe, 0);
 		if (fe->h_iocp != ev->h_iocp) {
-			msg_fatal("%s(%d): CreateIoCompletionPort error(%s)",
-				__FUNCTION__, __LINE__, last_serror());
+			net_msg_fatal("%s(%d): CreateIoCompletionPort error(%s)",
+				__FUNCTION__, __LINE__, net_last_serror());
 		}
 	}
 }
 
-static int iocp_add_listen(EVENT_IOCP *ev, FILE_EVENT *fe)
+static int iocp_add_listen(EVENT_IOCP *ev, NET_FILE *fe)
 {
 	DWORD    ReceiveLen = 0;
 	socket_t sock;
@@ -177,22 +176,22 @@ static int iocp_add_listen(EVENT_IOCP *ev, FILE_EVENT *fe)
 		&fe->reader->overlapped);
 
 	if (ret == TRUE) {
-		fe->mask |= EVENT_READ;
+		fe->mask |= NET_EVENT_READ;
 		return 1;
 	} else if (last_error() == ERROR_IO_PENDING) {
-		fe->mask |= EVENT_READ;
+		fe->mask |= NET_EVENT_READ;
 		return 0;
 	} else {
-		msg_warn("%s(%d): AcceptEx error(%s)",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_warn("%s(%d): AcceptEx error(%s)",
+			__FUNCTION__, __LINE__, net_last_serror());
 		fe->mask |= EVENT_ERROR;
 		assert(fe->reader);
-		array_append(ev->events, fe->reader);
+		net_array_append(ev->events, fe->reader);
 		return 1;
 	}
 }
 
-static int iocp_add_read(EVENT_IOCP *ev, FILE_EVENT *fe)
+static int iocp_add_read(EVENT_IOCP *ev, NET_FILE *fe)
 {
 	int ret;
 	WSABUF wsaData;
@@ -218,7 +217,7 @@ static int iocp_add_read(EVENT_IOCP *ev, FILE_EVENT *fe)
 			fe->reader = (IOCP_EVENT*) mem_calloc(1, sizeof(IOCP_EVENT));
 			fe->reader->refer = 0;
 			fe->reader->fe    = fe;
-			fe->reader->type = IOCP_EVENT_READ;
+			fe->reader->type = IOCP_NET_EVENT_READ;
 		}
 		event = fe->reader;
 	}
@@ -239,22 +238,22 @@ static int iocp_add_read(EVENT_IOCP *ev, FILE_EVENT *fe)
 	fe->len = (int) len;
 
 	if (ret != SOCKET_ERROR) {
-		fe->mask |= EVENT_READ;
+		fe->mask |= NET_EVENT_READ;
 		return 1;
 	} else if (last_error() == ERROR_IO_PENDING) {
-		fe->mask |= EVENT_READ;
+		fe->mask |= NET_EVENT_READ;
 		return 0;
 	} else {
-		msg_warn("%s(%d): ReadFile error(%d), fd=%d",
+		net_msg_warn("%s(%d): ReadFile error(%d), fd=%d",
 			__FUNCTION__, __LINE__, last_error(), fe->fd);
 		fe->mask |= EVENT_ERROR;
 		assert(fe->reader);
-		array_append(ev->events, fe->reader);
+		net_array_append(ev->events, fe->reader);
 		return -1;
 	}
 }
 
-static int iocp_add_write(EVENT_IOCP *ev, FILE_EVENT *fe)
+static int iocp_add_write(EVENT_IOCP *ev, NET_FILE *fe)
 {
 	DWORD sendBytes;
 	BOOL  ret;
@@ -278,7 +277,7 @@ static int iocp_add_write(EVENT_IOCP *ev, FILE_EVENT *fe)
 			fe->writer        = (IOCP_EVENT*) mem_malloc(sizeof(IOCP_EVENT));
 			fe->writer->refer = 0;
 			fe->writer->fe    = fe;
-			fe->writer->type = IOCP_EVENT_WRITE;
+			fe->writer->type = IOCP_NET_EVENT_WRITE;
 		}
 		event = fe->writer;
 	}
@@ -294,32 +293,32 @@ static int iocp_add_write(EVENT_IOCP *ev, FILE_EVENT *fe)
 		&event->overlapped);
 
 	if (ret == TRUE) {
-		fe->mask |= EVENT_WRITE;
+		fe->mask |= NET_EVENT_WRITE;
 		return 0;
 	} else if (last_error() != ERROR_IO_PENDING) {
-		fe->mask |= EVENT_WRITE;
+		fe->mask |= NET_EVENT_WRITE;
 		return 0;
 	} else {
-		msg_warn("%s(%d): WriteFile error(%s)",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_warn("%s(%d): WriteFile error(%s)",
+			__FUNCTION__, __LINE__, net_last_serror());
 		fe->mask |= EVENT_ERROR;
 		assert(fe->writer);
-		array_append(ev->events, fe->writer);
+		net_array_append(ev->events, fe->writer);
 		return -1;
 	}
 }
 
-static int iocp_del_read(EVENT_IOCP *ev, FILE_EVENT *fe)
+static int iocp_del_read(EVENT_IOCP *ev, NET_FILE *fe)
 {
-	if (!(fe->mask & EVENT_READ)) {
+	if (!(fe->mask & NET_EVENT_READ)) {
 		return 0;
 	}
 
 	assert(fe->id >= 0 && fe->id < ev->count);
-	fe->mask &= ~EVENT_READ;
+	fe->mask &= ~NET_EVENT_READ;
 
 	if (fe->reader) {
-		fe->reader->type &= ~IOCP_EVENT_READ;
+		fe->reader->type &= ~IOCP_NET_EVENT_READ;
 	}
 	if (fe->poller_read) {
 		fe->poller_read->type &= ~IOCP_EVENT_POLLR;
@@ -331,17 +330,17 @@ static int iocp_del_read(EVENT_IOCP *ev, FILE_EVENT *fe)
 	return 0;
 }
 
-static int iocp_del_write(EVENT_IOCP *ev, FILE_EVENT *fe)
+static int iocp_del_write(EVENT_IOCP *ev, NET_FILE *fe)
 {
-	if (!(fe->mask & EVENT_WRITE)) {
+	if (!(fe->mask & NET_EVENT_WRITE)) {
 		return 0;
 	}
 
 	assert(fe->id >= 0 && fe->id < ev->count);
-	fe->mask &= ~EVENT_WRITE;
+	fe->mask &= ~NET_EVENT_WRITE;
 
 	if (fe->writer) {
-		fe->writer->type &= ~IOCP_EVENT_WRITE;
+		fe->writer->type &= ~IOCP_NET_EVENT_WRITE;
 	}
 	if (fe->poller_write) {
 		fe->poller_write->type &= ~IOCP_EVENT_POLLW;
@@ -354,26 +353,26 @@ static int iocp_del_write(EVENT_IOCP *ev, FILE_EVENT *fe)
 }
 
 static void iocp_event_save(EVENT_IOCP *ei, IOCP_EVENT *event,
-	FILE_EVENT *fe, DWORD trans)
+	NET_FILE *fe, DWORD trans)
 {
-	if ((event->type & (IOCP_EVENT_READ | IOCP_EVENT_POLLR))) {
-		fe->mask &= ~EVENT_READ;
-	} else if ((event->type & (IOCP_EVENT_WRITE | IOCP_EVENT_POLLW))) {
-		fe->mask &= ~EVENT_WRITE;
+	if ((event->type & (IOCP_NET_EVENT_READ | IOCP_EVENT_POLLR))) {
+		fe->mask &= ~NET_EVENT_READ;
+	} else if ((event->type & (IOCP_NET_EVENT_WRITE | IOCP_EVENT_POLLW))) {
+		fe->mask &= ~NET_EVENT_WRITE;
 	}
 
 	fe->len = (int) trans;
-	array_append(ei->events, event);
+	net_array_append(ei->events, event);
 }
 
-static int iocp_wait(EVENT *ev, int timeout)
+static int iocp_wait(NET_EVENT *ev, int timeout)
 {
 	EVENT_IOCP *ei = (EVENT_IOCP *) ev;
 	IOCP_EVENT *event;
 
 	for (;;) {
 		DWORD bytesTransferred;
-		FILE_EVENT *fe;
+		NET_FILE *fe;
 		event = NULL;
 
 		BOOL isSuccess = GetQueuedCompletionStatus(ei->h_iocp,
@@ -415,7 +414,7 @@ static int iocp_wait(EVENT *ev, int timeout)
 		timeout = 0;
 	}
 
-	/* peek and handle all IOCP EVENT added in iocp_event_save(). */
+	/* peek and handle all IOCP NET_EVENT added in iocp_event_save(). */
 	while ((event = (IOCP_EVENT*) ei->events->pop_back(ei->events)) != NULL) {
 		if (event->proc && event->fe) {
 			event->proc(ev, event->fe);
@@ -425,28 +424,28 @@ static int iocp_wait(EVENT *ev, int timeout)
 	return 0;
 }
 
-static void iocp_free(EVENT *ev)
+static void iocp_free(NET_EVENT *ev)
 {
 	EVENT_IOCP *ei = (EVENT_IOCP *) ev;
 
 	if (ei->h_iocp) {
 		CloseHandle(ei->h_iocp);
 	}
-	array_free(ei->events, NULL);
+	net_array_free(ei->events, NULL);
 	mem_free(ei->files);
 	mem_free(ei);
 }
 
-static int iocp_checkfd(EVENT_IOCP *ev, FILE_EVENT *fe)
+static int iocp_checkfd(EVENT_IOCP *ev, NET_FILE *fe)
 {
 	(void) ev;
 	return getsocktype(fe->fd) == -1 ? -1 : 0;
 }
 
-static acl_handle_t iocp_handle(EVENT *ev)
+static net_handle_t iocp_handle(NET_EVENT *ev)
 {
 	EVENT_IOCP *ei = (EVENT_IOCP *) ev;
-	return (acl_handle_t) ei->h_iocp;
+	return (net_handle_t) ei->h_iocp;
 }
 
 static const char *iocp_name(void)
@@ -454,19 +453,19 @@ static const char *iocp_name(void)
 	return "iocp";
 }
 
-EVENT *event_iocp_create(int size)
+NET_EVENT *net_iocp_create(int size)
 {
 	EVENT_IOCP *ei = (EVENT_IOCP *) mem_calloc(1, sizeof(EVENT_IOCP));
 
 	ei->h_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 	if (ei->h_iocp == NULL) {
-		msg_fatal("%s(%d): create iocp error(%s)",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_fatal("%s(%d): create iocp error(%s)",
+			__FUNCTION__, __LINE__, net_last_serror());
 	}
 
-	ei->events = array_create(100);
+	ei->events = net_array_create(100);
 
-	ei->files = (FILE_EVENT**) mem_calloc(size, sizeof(FILE_EVENT*));
+	ei->files = (NET_FILE**) mem_calloc(size, sizeof(NET_FILE*));
 	ei->size  = size;
 	ei->count = 0;
 
@@ -476,14 +475,14 @@ EVENT *event_iocp_create(int size)
 	ei->event.flag   = EVENT_F_IOCP;
 
 	ei->event.event_wait = iocp_wait;
-	ei->event.checkfd    = (event_oper *) iocp_checkfd;
-	ei->event.add_read   = (event_oper *) iocp_add_read;
-	ei->event.add_write  = (event_oper *) iocp_add_write;
-	ei->event.del_read   = (event_oper *) iocp_del_read;
-	ei->event.del_write  = (event_oper *) iocp_del_write;
-	ei->event.close_sock = (event_oper *) iocp_close_sock;
+	ei->event.checkfd    = (net_event_oper *) iocp_checkfd;
+	ei->event.add_read   = (net_event_oper *) iocp_add_read;
+	ei->event.add_write  = (net_event_oper *) iocp_add_write;
+	ei->event.del_read   = (net_event_oper *) iocp_del_read;
+	ei->event.del_write  = (net_event_oper *) iocp_del_write;
+	ei->event.close_sock = (net_event_oper *) iocp_close_sock;
 
-	return (EVENT *) ei;
+	return (NET_EVENT *) ei;
 }
 
 #endif

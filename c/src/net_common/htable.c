@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "memory.h"
-#include "msg.h"
+#include "net_msg.h"
 #include "htable.h"
 
 /* htable_iter_head */
@@ -286,7 +286,7 @@ HTABLE_INFO *htable_enter(HTABLE *table, const char *key, void *value)
 	for (ht = table->data[n]; ht; ht = ht->next) {
 		if (STREQ(key, ht->key)) {
 			table->status = HTABLE_STAT_DUPLEX_KEY;
-			msg_info("%s(%d): duplex key(%s) exist",
+			net_msg_info("%s(%d): duplex key(%s) exist",
 				__FUNCTION__, __LINE__, key);
 			return ht;
 		}
@@ -294,7 +294,7 @@ HTABLE_INFO *htable_enter(HTABLE *table, const char *key, void *value)
 
 	ht = (HTABLE_INFO *) mem_malloc(sizeof(HTABLE_INFO));
 	if (ht == NULL) {
-		msg_error("%s(%d): alloc error", __FUNCTION__, __LINE__);
+		net_msg_error("%s(%d): alloc error", __FUNCTION__, __LINE__);
 		return NULL;
 	}
 
@@ -304,7 +304,7 @@ HTABLE_INFO *htable_enter(HTABLE *table, const char *key, void *value)
 	ht->key = mem_strdup(key);
 #endif
 	if (ht->key == NULL) {
-		msg_error("%s(%d): alloc error", __FUNCTION__, __LINE__);
+		net_msg_error("%s(%d): alloc error", __FUNCTION__, __LINE__);
 		mem_free(ht);
 		return NULL;
 	}

@@ -5,7 +5,6 @@
 
 #include <dlfcn.h>
 #include <sys/event.h>
-#include "event.h"
 #include "event_kqueue.h"
 
 typedef int (*kqueue_fn)(void);
@@ -36,7 +35,7 @@ static void hook_init(void)
 /****************************************************************************/
 
 typedef struct EVENT_KQUEUE {
-	EVENT  event;
+	NET_EVENT  event;
 	int    kqfd;
 	struct kevent *changes;
 	int    setsize;
@@ -45,7 +44,7 @@ typedef struct EVENT_KQUEUE {
 	int    nevents;
 } EVENT_KQUEUE;
 
-static void kqueue_free(EVENT *ev)
+static void kqueue_free(NET_EVENT *ev)
 {
 	EVENT_KQUEUE *ek = (EVENT_KQUEUE *) ev;
 
@@ -67,8 +66,8 @@ static int kqueue_fflush(EVENT_KQUEUE *ek)
 	ts.tv_sec  = 0;
 	ts.tv_nsec = 0;
 	if (__sys_kevent(ek->kqfd, ek->changes, ek->nchanges, NULL, 0, &ts) == -1) {
-		msg_error("%s(%d): kevent error %d, kqfd=%d",
-			__FUNCTION__, __LINE__, last_error(), ek->kqfd);
+		net_msg_error("%s(%d): kevent error %d, kqfd=%d",
+			__FUNCTION__, __LINE__, net_last_error(), ek->kqfd);
 		return -1;
 	}
 
@@ -77,7 +76,7 @@ static int kqueue_fflush(EVENT_KQUEUE *ek)
 	return nchanges;
 }
 
-static int kqueue_add_read(EVENT_KQUEUE *ek, FILE_EVENT *fe)
+static int kqueue_add_read(EVENT_KQUEUE *ek, NET_FILE *fe)
 {
 	struct kevent *kev;
 
@@ -89,14 +88,14 @@ static int kqueue_add_read(EVENT_KQUEUE *ek, FILE_EVENT *fe)
 
 	kev = &ek->changes[ek->nchanges++];
 	EV_SET(kev, fe->fd, EVFILT_READ, EV_ADD, 0, 0, fe);
-	if (!(fe->mask & EVENT_WRITE)) {
+	if (!(fe->mask & NET_EVENT_WRITE)) {
 		ek->event.fdcount++;
 	}
-	fe->mask |= EVENT_READ;
+	fe->mask |= NET_EVENT_READ;
 	return 0;
 }
 
-static int kqueue_add_write(EVENT_KQUEUE *ek, FILE_EVENT *fe)
+static int kqueue_add_write(EVENT_KQUEUE *ek, NET_FILE *fe)
 {
 	struct kevent *kev;
 
@@ -108,14 +107,14 @@ static int kqueue_add_write(EVENT_KQUEUE *ek, FILE_EVENT *fe)
 
 	kev = &ek->changes[ek->nchanges++];
 	EV_SET(kev, fe->fd, EVFILT_WRITE, EV_ADD, 0, 0, fe);
-	if (!(fe->mask & EVENT_READ)) {
+	if (!(fe->mask & NET_EVENT_READ)) {
 		ek->event.fdcount++;
 	}
-	fe->mask |= EVENT_WRITE;
+	fe->mask |= NET_EVENT_WRITE;
 	return 0;
 }
 
-static int kqueue_del_read(EVENT_KQUEUE *ek, FILE_EVENT *fe)
+static int kqueue_del_read(EVENT_KQUEUE *ek, NET_FILE *fe)
 {
 	struct kevent *kev;
 
@@ -127,14 +126,14 @@ static int kqueue_del_read(EVENT_KQUEUE *ek, FILE_EVENT *fe)
 
 	kev = &ek->changes[ek->nchanges++];
 	EV_SET(kev, fe->fd, EVFILT_READ, EV_DELETE, 0, 0, fe);
-	fe->mask &= ~EVENT_READ;
-	if (!(fe->mask & EVENT_WRITE)) {
+	fe->mask &= ~NET_EVENT_READ;
+	if (!(fe->mask & NET_EVENT_WRITE)) {
 		ek->event.fdcount--;
 	}
 	return 0;
 }
 
-static int kqueue_del_write(EVENT_KQUEUE *ek, FILE_EVENT *fe)
+static int kqueue_del_write(EVENT_KQUEUE *ek, NET_FILE *fe)
 {
 	struct kevent *kev;
 
@@ -146,19 +145,19 @@ static int kqueue_del_write(EVENT_KQUEUE *ek, FILE_EVENT *fe)
 
 	kev = &ek->changes[ek->nchanges++];
 	EV_SET(kev, fe->fd, EVFILT_WRITE, EV_DELETE, 0, 0, fe);
-	fe->mask &= ~EVENT_WRITE;
-	if (!(fe->mask & EVENT_READ)) {
+	fe->mask &= ~NET_EVENT_WRITE;
+	if (!(fe->mask & NET_EVENT_READ)) {
 		ek->event.fdcount--;
 	}
 	return 0;
 }
 
-static int kqueue_wait(EVENT *ev, int timeout)
+static int kqueue_wait(NET_EVENT *ev, int timeout)
 {
 	EVENT_KQUEUE *ek = (EVENT_KQUEUE *) ev;
 	struct timespec ts;
 	struct kevent *kev;
-	FILE_EVENT *fe;
+	NET_FILE *fe;
 	int n, i;
 
 	ts.tv_sec = timeout / 1000;
@@ -169,17 +168,17 @@ static int kqueue_wait(EVENT *ev, int timeout)
 	ek->nchanges = 0;
 
 	if (n == -1) {
-		if (last_error() == EVENT_EINTR) {
+		if (net_last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		msg_fatal("%s: kqueue error %d", __FUNCTION__, last_error());
+		net_msg_fatal("%s: kqueue error %d", __FUNCTION__, net_last_error());
 	} else if (n == 0) {
 		return 0;
 	}
 
 	for (i = 0; i < n; i++) {
 		kev = &ek->events[i];
-		fe  = (FILE_EVENT *) kev->udata;
+		fe  = (NET_FILE *) kev->udata;
 
 		if (kev && kev->filter == EVFILT_READ && fe && fe->r_proc) {
 			fe->r_proc(ev, fe);
@@ -193,12 +192,12 @@ static int kqueue_wait(EVENT *ev, int timeout)
 	return n;
 }
 
-static int kqueue_checkfd(EVENT *ev UNUSED, FILE_EVENT *fe UNUSED)
+static int kqueue_checkfd(NET_EVENT *ev UNUSED, NET_FILE *fe UNUSED)
 {
 	return -1;
 }
 
-static long kqueue_handle(EVENT *ev)
+static long kqueue_handle(NET_EVENT *ev)
 {
 	EVENT_KQUEUE *ek = (EVENT_KQUEUE *) ev;
 
@@ -210,7 +209,7 @@ static const char *kqueue_name(void)
 	return "kqueue";
 }
 
-EVENT *event_kqueue_create(int size)
+NET_EVENT *net_kqueue_create(int size)
 {
 	EVENT_KQUEUE *ek = (EVENT_KQUEUE *) mem_calloc(1, sizeof(EVENT_KQUEUE));
 
@@ -232,18 +231,18 @@ EVENT *event_kqueue_create(int size)
 	assert(ek->kqfd >= 0);
 
 	ek->event.name   = kqueue_name;
-	ek->event.handle = (acl_handle_t (*)(EVENT *)) kqueue_handle;
+	ek->event.handle = (net_handle_t (*)(NET_EVENT *)) kqueue_handle;
 	ek->event.free   = kqueue_free;
 
-	ek->event.event_fflush = (int (*)(EVENT*)) kqueue_fflush;
+	ek->event.event_fflush = (int (*)(NET_EVENT*)) kqueue_fflush;
 	ek->event.event_wait   = kqueue_wait;
-	ek->event.checkfd      = (event_oper *) kqueue_checkfd;
-	ek->event.add_read     = (event_oper *) kqueue_add_read;
-	ek->event.add_write    = (event_oper *) kqueue_add_write;
-	ek->event.del_read     = (event_oper *) kqueue_del_read;
-	ek->event.del_write    = (event_oper *) kqueue_del_write;
+	ek->event.checkfd      = (net_event_oper *) kqueue_checkfd;
+	ek->event.add_read     = (net_event_oper *) kqueue_add_read;
+	ek->event.add_write    = (net_event_oper *) kqueue_add_write;
+	ek->event.del_read     = (net_event_oper *) kqueue_del_read;
+	ek->event.del_write    = (net_event_oper *) kqueue_del_write;
 
-	return (EVENT *) ek;
+	return (NET_EVENT *) ek;
 }
 
 #endif

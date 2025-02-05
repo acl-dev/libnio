@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "common.h"
 
-#include "event.h"
+#include "net_event.h"
 
-void file_event_init(FILE_EVENT *fe, socket_t fd)
+void net_file_init(NET_FILE *fe, socket_t fd)
 {
-	ring_init(&fe->me);
+	net_ring_init(&fe->me);
 	fe->fd     = fd;
-    fe->ctx    = NULL;
+	fe->ctx    = NULL;
 	fe->id     = -1;
 	fe->status = STATUS_NONE;
 	fe->type   = TYPE_NONE;
@@ -28,14 +28,14 @@ void file_event_init(FILE_EVENT *fe, socket_t fd)
 #endif
 }
 
-FILE_EVENT *file_event_alloc(socket_t fd)
+NET_FILE *net_file_alloc(socket_t fd)
 {
-	FILE_EVENT *fe = (FILE_EVENT *) mem_calloc(1, sizeof(FILE_EVENT));
-	file_event_init(fe, fd);
+	NET_FILE *fe = (NET_FILE *) mem_calloc(1, sizeof(NET_FILE));
+	net_file_init(fe, fd);
 	return fe;
 }
 
-void file_event_free(FILE_EVENT *fe)
+void net_file_free(NET_FILE *fe)
 {
 	mem_free(fe);
 }

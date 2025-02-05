@@ -1,27 +1,27 @@
 #include "stdafx.h"
 
-#include "ring.h"
+#include "net_ring.h"
 
-#ifndef USE_FAST_RING
+#ifndef USE_FAST_NET_RING
 
-/* ring_init - initialize ring head */
-void ring_init(RING *ring)
+/* net_ring_init - initialize ring head */
+void net_ring_init(NET_RING *ring)
 {
 	ring->pred   = ring->succ = ring;
 	ring->parent = ring;
 	ring->len    = 0;
 }
 
-/* ring_size - the entry number in the ring */
+/* net_ring_size - the entry number in the ring */
 
-int ring_size(const RING *ring)
+int net_ring_size(const NET_RING *ring)
 {
 	return ring->len;
 }
 
-/* ring_append - insert entry after ring head */
+/* net_ring_append - insert entry after ring head */
 
-void ring_append(RING *ring, RING *entry)
+void net_ring_append(NET_RING *ring, NET_RING *entry)
 {
 	entry->succ      = ring->succ;
 	entry->pred      = ring;
@@ -31,9 +31,9 @@ void ring_append(RING *ring, RING *entry)
 	ring->parent->len++;
 }
 
-/* ring_prepend - insert new entry before ring head */
+/* net_ring_prepend - insert new entry before ring head */
 
-void ring_prepend(RING *ring, RING *entry)
+void net_ring_prepend(NET_RING *ring, NET_RING *entry)
 {
 	entry->pred      = ring->pred;
 	entry->succ      = ring;
@@ -43,11 +43,11 @@ void ring_prepend(RING *ring, RING *entry)
 	ring->parent->len++;
 }
 
-/* ring_detach - remove entry from ring */
+/* net_ring_detach - remove entry from ring */
 
-void ring_detach(RING *entry)
+void net_ring_detach(NET_RING *entry)
 {
-	RING *succ, *pred;
+	NET_RING *succ, *pred;
 
 	if (entry->parent != entry) {
 		succ = entry->succ;
@@ -64,34 +64,34 @@ void ring_detach(RING *entry)
 	}
 }
 
-/* ring_pop_head - pop ring's head entry out from ring */
+/* net_ring_pop_head - pop ring's head entry out from ring */
 
-RING *ring_pop_head(RING *ring)
+NET_RING *net_ring_pop_head(NET_RING *ring)
 {
-	RING *succ;
+	NET_RING *succ;
 
 	succ = ring->succ;
 	if (succ == ring) {
 		return NULL;
 	}
 
-	ring_detach(succ);
+	net_ring_detach(succ);
 	return succ;
 }
 
-/* ring_pop_tail - pop ring's tail entry out from ring */
+/* net_ring_pop_tail - pop ring's tail entry out from ring */
 
-RING *ring_pop_tail(RING *ring)
+NET_RING *net_ring_pop_tail(NET_RING *ring)
 {
-	RING *pred;
+	NET_RING *pred;
 
 	pred = ring->pred;
 	if (pred == ring) {
 		return NULL;
 	}
 
-	ring_detach(pred);
+	net_ring_detach(pred);
 	return pred;
 }
 
-#endif /* USE_FAST_RING */
+#endif /* USE_FAST_NET_RING */

@@ -4,18 +4,17 @@
 #ifdef HAS_WMSG
 
 #include <winuser.h>
-#include "event.h"
 #include "event_wmsg.h"
 
 #define WM_SOCKET_NOTIFY	(WM_USER + 8192)
 
 typedef struct EVENT_WMSG {
-	EVENT event;
+	NET_EVENT event;
 	UINT  nMsg;
 	HWND  hWnd;
 	HINSTANCE   hInstance;
 	const char *class_name;
-	FILE_EVENT **files;
+	NET_FILE **files;
 	int  size;
 	int  count;
 
@@ -33,17 +32,17 @@ static void set_hwnd_event(HWND hWnd, EVENT_WMSG *ev)
 	SetWindowLongPtr(hWnd, GWLP_USERDATA, (ULONG_PTR) ev);
 }
 
-static FILE_EVENT *file_event_find(EVENT_WMSG *ev, SOCKET fd)
+static NET_FILE *file_event_find(EVENT_WMSG *ev, SOCKET fd)
 {
 	char key[64];
 
 	//_snprintf(key, sizeof(key), "%u", fd);
 	_i64toa(fd, key, 10);
 
-	return (FILE_EVENT *) htable_find(ev->tbl, key);
+	return (NET_FILE *) htable_find(ev->tbl, key);
 }
 
-static void wmsg_free(EVENT *ev)
+static void wnet_msg_free(NET_EVENT *ev)
 {
 	EVENT_WMSG *ew = (EVENT_WMSG *) ev;
 
@@ -53,7 +52,7 @@ static void wmsg_free(EVENT *ev)
 		DestroyWindow(ew->hWnd);
 		if (ew->class_name && GetClassInfoEx(ew->hInstance,
 			ew->class_name, &wcx)) {
-			msg_info("%s(%d): unregister class: %s",
+			net_msg_info("%s(%d): unregister class: %s",
 				__FUNCTION__, __LINE__, ew->class_name);
 			UnregisterClass(ew->class_name, ew->hInstance);
 		}
@@ -63,35 +62,35 @@ static void wmsg_free(EVENT *ev)
 	mem_free(ew);
 }
 
-static void wmsg_fdmap_set(EVENT_WMSG *ev, FILE_EVENT *fe)
+static void wnet_msg_fdmap_set(EVENT_WMSG *ev, NET_FILE *fe)
 {
-	FILE_EVENT *pfe;
+	NET_FILE *pfe;
 	char key[64];
 
 	//_snprintf(key, sizeof(key), "%u", fe->fd);
 	_i64toa(fe->fd, key, 10);
 
-	pfe = (FILE_EVENT *) htable_find(ev->tbl, key);
+	pfe = (NET_FILE *) htable_find(ev->tbl, key);
 	if (pfe == NULL) {
 		htable_enter(ev->tbl, key, fe);
 		ev->event.fdcount++;
 	} else if (pfe != fe) {
-		msg_error("%s(%d): old fe(%p) exist, fd=%d",
+		net_msg_error("%s(%d): old fe(%p) exist, fd=%d",
 			__FUNCTION__, __LINE__, pfe, (int) fe->fd);
 	}
 }
 
-static FILE_EVENT *wmsg_fdmap_get(EVENT_WMSG *ev, SOCKET fd)
+static NET_FILE *wnet_msg_fdmap_get(EVENT_WMSG *ev, SOCKET fd)
 {
 	char key[64];
 
 	//_snprintf(key, sizeof(key), "%u", fd);
 	_i64toa(fd, key, 10);
 
-	return (FILE_EVENT *) htable_find(ev->tbl, key);
+	return (NET_FILE *) htable_find(ev->tbl, key);
 }
 
-static void wmsg_fdmap_del(EVENT_WMSG *ev, FILE_EVENT *fe)
+static void wnet_msg_fdmap_del(EVENT_WMSG *ev, NET_FILE *fe)
 {
 	char key[64];
 
@@ -103,7 +102,7 @@ static void wmsg_fdmap_del(EVENT_WMSG *ev, FILE_EVENT *fe)
 	}
 }
 
-static int wmsg_add_read(EVENT_WMSG *ev, FILE_EVENT *fe)
+static int wnet_msg_add_read(EVENT_WMSG *ev, NET_FILE *fe)
 {
 	long lEvent = FD_READ | FD_CLOSE;
 
@@ -114,17 +113,17 @@ static int wmsg_add_read(EVENT_WMSG *ev, FILE_EVENT *fe)
 	}
 
 	if (WSAAsyncSelect(fe->fd, ev->hWnd, ev->nMsg, lEvent) != 0) {
-		msg_error("%s(%d): set read error: %s",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_error("%s(%d): set read error: %s",
+			__FUNCTION__, __LINE__, net_last_serror());
 		return -1;
 	}
 
 	fe->mask |= EVENT_READ;
-	wmsg_fdmap_set(ev, fe);
+	wnet_msg_fdmap_set(ev, fe);
 	return 0;
 }
 
-static int wmsg_add_write(EVENT_WMSG *ev, FILE_EVENT *fe)
+static int wnet_msg_add_write(EVENT_WMSG *ev, NET_FILE *fe)
 {
 	long lEvent =  FD_WRITE | FD_CLOSE;
 
@@ -137,17 +136,17 @@ static int wmsg_add_write(EVENT_WMSG *ev, FILE_EVENT *fe)
 	}
 
 	if (WSAAsyncSelect(fe->fd, ev->hWnd, ev->nMsg, lEvent) != 0) {
-		msg_error("%s(%d): set read error: %s",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_error("%s(%d): set read error: %s",
+			__FUNCTION__, __LINE__, net_last_serror());
 		return -1;
 	}
 
 	fe->mask |= EVENT_WRITE;
-	wmsg_fdmap_set(ev, fe);
+	wnet_msg_fdmap_set(ev, fe);
 	return 0;
 }
 
-static int wmsg_del_read(EVENT_WMSG *ev, FILE_EVENT *fe)
+static int wnet_msg_del_read(EVENT_WMSG *ev, NET_FILE *fe)
 {
 	long lEvent;
 
@@ -159,19 +158,19 @@ static int wmsg_del_read(EVENT_WMSG *ev, FILE_EVENT *fe)
 
 	fe->mask &= ~EVENT_READ;
 	if (fe->mask == 0) {
-		wmsg_fdmap_del(ev, fe);
+		wnet_msg_fdmap_del(ev, fe);
 	}
 
 	if (WSAAsyncSelect(fe->fd, ev->hWnd, lEvent ? ev->nMsg : 0, lEvent)) {
-		msg_error("%s(%d): set read error: %s",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_error("%s(%d): set read error: %s",
+			__FUNCTION__, __LINE__, net_last_serror());
 		return -1;
 	}
 
 	return 0;
 }
 
-static int wmsg_del_write(EVENT_WMSG *ev, FILE_EVENT *fe)
+static int wnet_msg_del_write(EVENT_WMSG *ev, NET_FILE *fe)
 {
 	long lEvent;
 
@@ -183,24 +182,24 @@ static int wmsg_del_write(EVENT_WMSG *ev, FILE_EVENT *fe)
 
 	fe->mask &= ~EVENT_WRITE;
 	if (fe->mask == 0) {
-		wmsg_fdmap_del(ev, fe);
+		wnet_msg_fdmap_del(ev, fe);
 	}
 
 	if (WSAAsyncSelect(fe->fd, ev->hWnd, lEvent ? ev->nMsg : 0, lEvent)) {
-		msg_error("%s(%d): set read error: %s",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_error("%s(%d): set read error: %s",
+			__FUNCTION__, __LINE__, net_last_serror());
 		return -1;
 	}
 	return 0;
 }
 
-static int wmsg_checkfd(EVENT_WMSG *ev, FILE_EVENT *fe)
+static int wnet_msg_checkfd(EVENT_WMSG *ev, NET_FILE *fe)
 {
 	(void) ev;
 	return getsocktype(fe->fd) == -1 ? -1 : 0;
 }
 
-static int wmsg_wait(EVENT *ev, int timeout)
+static int wnet_msg_wait(NET_EVENT *ev, int timeout)
 {
 	MSG msg;
 	UINT_PTR id = SetTimer(NULL, 0, timeout, NULL);
@@ -227,12 +226,12 @@ static int wmsg_wait(EVENT *ev, int timeout)
 
 static void onRead(EVENT_WMSG *ev, SOCKET fd)
 {
-	FILE_EVENT *fe = wmsg_fdmap_get(ev, fd);
+	NET_FILE *fe = wnet_msg_fdmap_get(ev, fd);
 	if (fe == NULL) {
-		msg_error("%s(%d): no FILE_EVENT, fd=%d",
+		net_msg_error("%s(%d): no NET_FILE, fd=%d",
 			__FUNCTION__, __LINE__, fd);
 	} else if (fe->r_proc == NULL) {
-		msg_error("%s(%d): r_proc NULL, fd=%d",
+		net_msg_error("%s(%d): r_proc NULL, fd=%d",
 			__FUNCTION__, __LINE__, fd);
 	} else {
 		//fe->mask &= ~EVENT_READ;
@@ -242,12 +241,12 @@ static void onRead(EVENT_WMSG *ev, SOCKET fd)
 
 static void onWrite(EVENT_WMSG *ev, SOCKET fd)
 {
-	FILE_EVENT *fe = wmsg_fdmap_get(ev, fd);
+	NET_FILE *fe = wnet_msg_fdmap_get(ev, fd);
 	if (fe == NULL) {
-		msg_error("%s(%d): no FILE_EVENT, fd=%d",
+		net_msg_error("%s(%d): no NET_FILE, fd=%d",
 			__FUNCTION__, __LINE__, fd);
 	} else if (fe->w_proc == NULL) {
-		msg_error("%s(%d): w_proc NULL, fd=%d",
+		net_msg_error("%s(%d): w_proc NULL, fd=%d",
 			__FUNCTION__, __LINE__, fd);
 	} else {
 		//fe->mask &= ~EVENT_WRITE;
@@ -257,12 +256,12 @@ static void onWrite(EVENT_WMSG *ev, SOCKET fd)
 
 static void onAccept(EVENT_WMSG *ev, SOCKET fd)
 {
-	FILE_EVENT *fe = wmsg_fdmap_get(ev, fd);
+	NET_FILE *fe = wnet_msg_fdmap_get(ev, fd);
 	if (fe == NULL) {
-		msg_error("%s(%d): no FILE_EVENT, fd=%d",
+		net_msg_error("%s(%d): no NET_FILE, fd=%d",
 			__FUNCTION__, __LINE__, fd);
 	} else if (fe->r_proc == NULL) {
-		msg_error("%s(%d): r_proc NULL, fd=%d",
+		net_msg_error("%s(%d): r_proc NULL, fd=%d",
 			__FUNCTION__, __LINE__, fd);
 	} else {
 		//fe->mask &= ~EVENT_READ;
@@ -277,7 +276,7 @@ static void onConnect(EVENT_WMSG *ev, SOCKET fd)
 
 static void onClose(EVENT_WMSG *ev, SOCKET fd)
 {
-	FILE_EVENT *fe = wmsg_fdmap_get(ev, fd);
+	NET_FILE *fe = wnet_msg_fdmap_get(ev, fd);
 	if (fe == NULL) {
 		/* don nothing */
 	} else if (fe->mask & EVENT_READ) {
@@ -333,7 +332,7 @@ static BOOL InitApplication(const char *class_name, HINSTANCE hInstance)
 
 	if (GetClassInfoEx(hInstance, class_name, &wcx)) {
 		/* class already registered */
-		msg_info("%s(%d): class(%s) already registered",
+		net_msg_info("%s(%d): class(%s) already registered",
 			__FUNCTION__, __LINE__, class_name);
 		return TRUE;
 	}
@@ -365,8 +364,8 @@ static BOOL InitApplication(const char *class_name, HINSTANCE hInstance)
 
 	/* Register the window class. */
 	if (RegisterClassEx(&wcx) == 0) {
-		msg_error("%s(%d): RegisterClassEx error(%d, %s)", __FUNCTION__,
-			__LINE__, last_error(), last_serror());
+		net_msg_error("%s(%d): RegisterClassEx error(%d, %s)", __FUNCTION__,
+			__LINE__, net_last_error(), net_last_serror());
 		return FALSE;
 	} else {
 		return TRUE;
@@ -395,8 +394,8 @@ static HWND InitInstance(const char *class_name, HINSTANCE hInstance)
 		cs.lpszName, cs.style, cs.x, cs.y, cs.cx, cs.cy,
 		cs.hwndParent, cs.hMenu, cs.hInstance, cs.lpCreateParams);
 	if (hWnd == NULL) {
-		msg_error("%s(%d): create windows error: %s",
-			__FUNCTION__, __LINE__, last_serror());
+		net_msg_error("%s(%d): create windows error: %s",
+			__FUNCTION__, __LINE__, net_last_serror());
 	}
 	return hWnd;
 }
@@ -409,26 +408,26 @@ static HWND CreateSockWindow(const char *class_name, HINSTANCE hInstance)
 	return InitInstance(class_name, hInstance);
 }
 
-static acl_handle_t wmsg_handle(EVENT *ev)
+static acl_handle_t wnet_msg_handle(NET_EVENT *ev)
 {
 	EVENT_WMSG *ew = (EVENT_WMSG *) ev;
 	return (acl_handle_t) ew->hInstance;
 }
 
-static const char *wmsg_name(void)
+static const char *wnet_msg_name(void)
 {
 	return "wmsg";
 }
 
 static const char *__class_name = "__EventEventsMainWClass";
 
-EVENT *event_wmsg_create(int size)
+NET_EVENT *event_wnet_msg_create(int size)
 {
 	EVENT_WMSG *ew = (EVENT_WMSG *) mem_calloc(1, sizeof(EVENT_WMSG));
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 	HWND hWnd = CreateSockWindow(__class_name, hInstance);
 
-	ew->files = (FILE_EVENT**) mem_calloc(size, sizeof(FILE_EVENT*));
+	ew->files = (NET_FILE**) mem_calloc(size, sizeof(NET_FILE*));
 	ew->size  = size;
 	ew->count = 0;
 
@@ -438,19 +437,19 @@ EVENT *event_wmsg_create(int size)
 	ew->class_name   = __class_name;
 	ew->tbl          = htable_create(10);
 
-	ew->event.name   = wmsg_name;
-	ew->event.handle = wmsg_handle;
-	ew->event.free   = wmsg_free;
-	ew->event.event_wait = wmsg_wait;
-	ew->event.checkfd    = (event_oper *) wmsg_checkfd;
-	ew->event.add_read   = (event_oper *) wmsg_add_read;
-	ew->event.add_write  = (event_oper *) wmsg_add_write;
-	ew->event.del_read   = (event_oper *) wmsg_del_read;
-	ew->event.del_write  = (event_oper *) wmsg_del_write;
+	ew->event.name   = wnet_msg_name;
+	ew->event.handle = wnet_msg_handle;
+	ew->event.free   = wnet_msg_free;
+	ew->event.event_wait = wnet_msg_wait;
+	ew->event.checkfd    = (net_event_oper *) wnet_msg_checkfd;
+	ew->event.add_read   = (net_event_oper *) wnet_msg_add_read;
+	ew->event.add_write  = (net_event_oper *) wnet_msg_add_write;
+	ew->event.del_read   = (net_event_oper *) wnet_msg_del_read;
+	ew->event.del_write  = (net_event_oper *) wnet_msg_del_write;
 
 	set_hwnd_event(hWnd, ew);
 
-	return (EVENT*) ew;
+	return (NET_EVENT*) ew;
 }
 
 #endif

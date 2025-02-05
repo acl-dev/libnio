@@ -7,19 +7,18 @@
 #define __USE_GNU
 #endif
 #include <sys/epoll.h>
-#include "event.h"
 #include "event_epoll.h"
 
 /****************************************************************************/
 
 typedef struct EVENT_EPOLL {
-	EVENT event;
+	NET_EVENT event;
 	int   epfd;
 	struct epoll_event *events;
 	int   size;
 } EVENT_EPOLL;
 
-static void epoll_free(EVENT *ev)
+static void epoll_free(NET_EVENT *ev)
 {
 	EVENT_EPOLL *ep = (EVENT_EPOLL *) ev;
 
@@ -28,14 +27,14 @@ static void epoll_free(EVENT *ev)
 	mem_free(ep);
 }
 
-static int epoll_add_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
+static int epoll_add_read(EVENT_EPOLL *ep, NET_FILE *fe)
 {
 	struct epoll_event ee;
 	int op, n;
 
-	if ((fe->mask & EVENT_READ)) {
+	if ((fe->mask & NET_EVENT_READ)) {
 		return 0;
-    }
+	}
 
 	ee.events   = 0;
 	ee.data.u32 = 0;
@@ -43,7 +42,7 @@ static int epoll_add_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	ee.data.ptr = fe;
 
 	ee.events |= EPOLLIN;
-	if (fe->mask & EVENT_WRITE) {
+	if (fe->mask & NET_EVENT_WRITE) {
 		ee.events |= EPOLLOUT;
 		op = EPOLL_CTL_MOD;
 		n  = 0;
@@ -53,19 +52,19 @@ static int epoll_add_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	}
 
 	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
-		fe->mask |= EVENT_READ;
+		fe->mask |= NET_EVENT_READ;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EPERM) {
-		msg_error("%s(%d): epoll_ctl error %d, epfd=%d, fd=%d\n",
-			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
+		net_msg_error("%s(%d): epoll_ctl error %d, epfd=%d, fd=%d\n",
+			__FUNCTION__, __LINE__, net_last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
 
-static int epoll_add_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
+static int epoll_add_write(EVENT_EPOLL *ep, NET_FILE *fe)
 {
 	struct epoll_event ee;
 	int op, n;
@@ -77,7 +76,7 @@ static int epoll_add_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
 
 	ee.events |= EPOLLOUT;
 
-	if (fe->mask & EVENT_READ) {
+	if (fe->mask & NET_EVENT_READ) {
 		ee.events |= EPOLLIN;
 		op = EPOLL_CTL_MOD;
 		n  = 0;
@@ -87,19 +86,19 @@ static int epoll_add_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	}
 
 	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
-		fe->mask |= EVENT_WRITE;
+		fe->mask |= NET_EVENT_WRITE;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EPERM) {
-		msg_error("%s(%d): epoll_ctl error %d, epfd=%d, fd=%d",
-			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
+		net_msg_error("%s(%d): epoll_ctl error %d, epfd=%d, fd=%d",
+			__FUNCTION__, __LINE__, net_last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
 
-static int epoll_del_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
+static int epoll_del_read(EVENT_EPOLL *ep, NET_FILE *fe)
 {
 	struct epoll_event ee;
 	int op, n = 0;
@@ -109,7 +108,7 @@ static int epoll_del_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	ee.data.fd  = 0;
 	ee.data.ptr = fe;
 
-	if (fe->mask & EVENT_WRITE) {
+	if (fe->mask & NET_EVENT_WRITE) {
 		ee.events = EPOLLOUT;
 		op = EPOLL_CTL_MOD;
 		n  = 0;
@@ -119,19 +118,19 @@ static int epoll_del_read(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	}
 
 	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
-		fe->mask &= ~EVENT_READ;
+		fe->mask &= ~NET_EVENT_READ;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EEXIST) {
-		msg_error("%s(%d), epoll_ctl error: %d, epfd=%d, fd=%d",
-			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
+		net_msg_error("%s(%d), epoll_ctl error: %d, epfd=%d, fd=%d",
+			__FUNCTION__, __LINE__, net_last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
 
-static int epoll_del_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
+static int epoll_del_write(EVENT_EPOLL *ep, NET_FILE *fe)
 {
 	struct epoll_event ee;
 	int op, n;
@@ -141,7 +140,7 @@ static int epoll_del_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	ee.data.fd  = 0;
 	ee.data.ptr = fe;
 
-	if (fe->mask & EVENT_READ) {
+	if (fe->mask & NET_EVENT_READ) {
 		ee.events = EPOLLIN;
 		op = EPOLL_CTL_MOD;
 		n  = 0;
@@ -151,39 +150,39 @@ static int epoll_del_write(EVENT_EPOLL *ep, FILE_EVENT *fe)
 	}
 
 	if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
-		fe->mask &= ~EVENT_WRITE;
+		fe->mask &= ~NET_EVENT_WRITE;
 		ep->event.fdcount += n;
 		return 0;
 	}
 
 	if (errno != EEXIST) {
-		msg_error("%s(%d), epoll_ctl error: %d, efd=%d, fd=%d",
-			__FUNCTION__, __LINE__, last_error(), ep->epfd, fe->fd);
+		net_msg_error("%s(%d), epoll_ctl error: %d, efd=%d, fd=%d",
+			__FUNCTION__, __LINE__, net_last_error(), ep->epfd, fe->fd);
 	}
 	return -1;
 }
 
-static int epoll_event_wait(EVENT *ev, int timeout)
+static int epoll_event_wait(NET_EVENT *ev, int timeout)
 {
 	EVENT_EPOLL *ep = (EVENT_EPOLL *) ev;
 	struct epoll_event *ee;
-	FILE_EVENT *fe;
+	NET_FILE *fe;
 	int n, i;
 
 	n = epoll_wait(ep->epfd, ep->events, ep->size, timeout);
 
 	if (n < 0) {
-		if (last_error() == EVENT_EINTR) {
+		if (net_last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		msg_fatal("%s: epoll_wait error %d", __FUNCTION__, last_error());
+		net_msg_fatal("%s: epoll_wait error %d", __FUNCTION__, net_last_error());
 	} else if (n == 0) {
 		return 0;
 	}
 
 	for (i = 0; i < n; i++) {
 		ee = &ep->events[i];
-		fe = (FILE_EVENT *) ee->data.ptr;
+		fe = (NET_FILE *) ee->data.ptr;
 
 #define EVENT_ERR	(EPOLLERR | EPOLLHUP)
 
@@ -199,20 +198,20 @@ static int epoll_event_wait(EVENT *ev, int timeout)
 	return n;
 }
 
-static int epoll_checkfd(EVENT *ev UNUSED, FILE_EVENT *fe UNUSED)
+static int epoll_checkfd(NET_EVENT *ev UNUSED, NET_FILE *fe UNUSED)
 {
 	if (ev->add_read(ev, fe) == -1) {
 		return -1;
 	}
 	if (ev->del_read(ev, fe) == -1) {
-		msg_error("%s(%d): del_read failed, fd=%d",
+		net_msg_error("%s(%d): del_read failed, fd=%d",
 			__FUNCTION__, __LINE__, fe->fd);
 		return -1;
 	}
 	return 0;
 }
 
-static long epoll_handle(EVENT *ev)
+static long epoll_handle(NET_EVENT *ev)
 {
 	EVENT_EPOLL *ep = (EVENT_EPOLL *) ev;
 
@@ -224,7 +223,7 @@ static const char *epoll_name(void)
 	return "epoll";
 }
 
-EVENT *event_epoll_create(int size)
+NET_EVENT *net_epoll_create(int size)
 {
 	EVENT_EPOLL *ep = (EVENT_EPOLL *) mem_calloc(1, sizeof(EVENT_EPOLL));
 
@@ -236,17 +235,17 @@ EVENT *event_epoll_create(int size)
 	assert(ep->epfd >= 0);
 
 	ep->event.name   = epoll_name;
-	ep->event.handle = (acl_handle_t (*)(EVENT *)) epoll_handle;
+	ep->event.handle = (net_handle_t (*)(NET_EVENT *)) epoll_handle;
 	ep->event.free   = epoll_free;
 
 	ep->event.event_wait = epoll_event_wait;
-	ep->event.checkfd    = (event_oper *) epoll_checkfd;
-	ep->event.add_read   = (event_oper *) epoll_add_read;
-	ep->event.add_write  = (event_oper *) epoll_add_write;
-	ep->event.del_read   = (event_oper *) epoll_del_read;
-	ep->event.del_write  = (event_oper *) epoll_del_write;
+	ep->event.checkfd    = (net_event_oper *) epoll_checkfd;
+	ep->event.add_read   = (net_event_oper *) epoll_add_read;
+	ep->event.add_write  = (net_event_oper *) epoll_add_write;
+	ep->event.del_read   = (net_event_oper *) epoll_del_read;
+	ep->event.del_write  = (net_event_oper *) epoll_del_write;
 
-	return (EVENT*) ep;
+	return (NET_EVENT*) ep;
 }
 
 #endif	// end HAS_EPOLL

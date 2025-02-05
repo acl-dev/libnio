@@ -3,29 +3,28 @@
 
 #ifdef HAS_POLL
 
-#include "event.h"
 #include "event_poll.h"
 
 typedef struct EVENT_POLL {
-	EVENT  event;
-	FILE_EVENT **files;
+	NET_EVENT  event;
+	NET_FILE **files;
 	int    size;
 	int    count;
 	struct pollfd *pfds;
-	ARRAY *ready;
+	NET_ARRAY *ready;
 } EVENT_POLL;
 
-static void poll_free(EVENT *ev)
+static void poll_free(NET_EVENT *ev)
 {
 	EVENT_POLL *ep = (EVENT_POLL *) ev;
 
 	mem_free(ep->files);
 	mem_free(ep->pfds);
-	array_free(ep->ready, NULL);
+	net_array_free(ep->ready, NULL);
 	mem_free(ep);
 }
 
-static int poll_add_read(EVENT_POLL *ep, FILE_EVENT *fe)
+static int poll_add_read(EVENT_POLL *ep, NET_FILE *fe)
 {
 	struct pollfd *pfd;
 
@@ -46,12 +45,12 @@ static int poll_add_read(EVENT_POLL *ep, FILE_EVENT *fe)
 		ep->event.fdcount++;
 	}
 
-	fe->mask    |= EVENT_READ;
+	fe->mask    |= NET_EVENT_READ;
 	pfd->events |= POLLIN;
 	return 0;
 }
 
-static int poll_add_write(EVENT_POLL *ep, FILE_EVENT *fe)
+static int poll_add_write(EVENT_POLL *ep, NET_FILE *fe)
 {
 	struct pollfd *pfd = (fe->id >= 0 && fe->id < ep->count)
 		? &ep->pfds[fe->id] : NULL;
@@ -73,12 +72,12 @@ static int poll_add_write(EVENT_POLL *ep, FILE_EVENT *fe)
 		ep->event.fdcount++;
 	}
 
-	fe->mask    |= EVENT_WRITE;
+	fe->mask    |= NET_EVENT_WRITE;
 	pfd->events |= POLLOUT;
 	return 0;
 }
 
-static int poll_del_read(EVENT_POLL *ep, FILE_EVENT *fe)
+static int poll_del_read(EVENT_POLL *ep, NET_FILE *fe)
 {
 	struct pollfd *pfd;
 
@@ -101,11 +100,11 @@ static int poll_del_read(EVENT_POLL *ep, FILE_EVENT *fe)
 		fe->id = -1;
 		ep->event.fdcount--;
 	}
-	fe->mask &= ~EVENT_READ;
+	fe->mask &= ~NET_EVENT_READ;
 	return 0;
 }
 
-static int poll_del_write(EVENT_POLL *ep, FILE_EVENT *fe)
+static int poll_del_write(EVENT_POLL *ep, NET_FILE *fe)
 {
 	struct pollfd *pfd;
 
@@ -128,11 +127,11 @@ static int poll_del_write(EVENT_POLL *ep, FILE_EVENT *fe)
 		fe->id = -1;
 		ep->event.fdcount--;
 	}
-	fe->mask &= ~EVENT_WRITE;
+	fe->mask &= ~NET_EVENT_WRITE;
 	return 0;
 }
 
-static int poll_wait(EVENT *ev, int timeout)
+static int poll_wait(NET_EVENT *ev, int timeout)
 {
 	EVENT_POLL *ep = (EVENT_POLL *) ev;
 	ITER  iter;
@@ -150,21 +149,21 @@ static int poll_wait(EVENT *ev, int timeout)
 #else
 	if (n == -1) {
 #endif
-		if (last_error() == EVENT_EINTR) {
+		if (net_last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		msg_fatal("%s: poll error %d", __FUNCTION__, last_error());
+		net_msg_fatal("%s: poll error %d", __FUNCTION__, net_last_error());
 	} else if (n == 0) {
 		return n;
 	}
 
 	for (i = 0; i < ep->count; i++) {
-		FILE_EVENT *fe = ep->files[i];
-		array_append(ep->ready, fe);
+		NET_FILE *fe = ep->files[i];
+		net_array_append(ep->ready, fe);
 	}
 
 	foreach(iter, ep->ready) {
-		FILE_EVENT *fe = (FILE_EVENT *) iter.data;
+		NET_FILE *fe = (NET_FILE *) iter.data;
 		struct pollfd *pfd = &ep->pfds[fe->id];
 
 #define EVENT_ERR	(POLLERR | POLLHUP | POLLNVAL)
@@ -178,19 +177,19 @@ static int poll_wait(EVENT *ev, int timeout)
 		}
 	}
 
-	array_clean(ep->ready, NULL);
+	net_array_clean(ep->ready, NULL);
 	return n;
 }
 
-static int poll_checkfd(EVENT *ev UNUSED, FILE_EVENT *fe UNUSED)
+static int poll_checkfd(NET_EVENT *ev UNUSED, NET_FILE *fe UNUSED)
 {
 	return -1;
 }
 
-static acl_handle_t poll_handle(EVENT *ev)
+static net_handle_t poll_handle(NET_EVENT *ev)
 {
 	(void) ev;
-	return (acl_handle_t)-1;
+	return (net_handle_t) -1;
 }
 
 static const char *poll_name(void)
@@ -198,16 +197,16 @@ static const char *poll_name(void)
 	return "poll";
 }
 
-EVENT *event_poll_create(int size)
+NET_EVENT *net_poll_create(int size)
 {
 	EVENT_POLL *ep = (EVENT_POLL *) mem_calloc(1, sizeof(EVENT_POLL));
 
 	// override size with system open limit setting
-	size      = open_limit(0);
+	size      = net_open_limit(0);
 	ep->size  = size;
 	ep->pfds  = (struct pollfd *) mem_calloc(size, sizeof(struct pollfd));
-	ep->files = (FILE_EVENT**) mem_calloc(size, sizeof(FILE_EVENT*));
-	ep->ready = array_create(100);
+	ep->files = (NET_FILE**) mem_calloc(size, sizeof(NET_FILE*));
+	ep->ready = net_array_create(100);
 	ep->count = 0;
 
 	ep->event.name   = poll_name;
@@ -215,13 +214,13 @@ EVENT *event_poll_create(int size)
 	ep->event.free   = poll_free;
 
 	ep->event.event_wait = poll_wait;
-	ep->event.checkfd    = (event_oper *) poll_checkfd;
-	ep->event.add_read   = (event_oper *) poll_add_read;
-	ep->event.add_write  = (event_oper *) poll_add_write;
-	ep->event.del_read   = (event_oper *) poll_del_read;
-	ep->event.del_write  = (event_oper *) poll_del_write;
+	ep->event.checkfd    = (net_event_oper *) poll_checkfd;
+	ep->event.add_read   = (net_event_oper *) poll_add_read;
+	ep->event.add_write  = (net_event_oper *) poll_add_write;
+	ep->event.del_read   = (net_event_oper *) poll_del_read;
+	ep->event.del_write  = (net_event_oper *) poll_del_write;
 
-	return (EVENT*) ep;
+	return (NET_EVENT*) ep;
 }
 
 #endif

@@ -1,19 +1,19 @@
 #include "stdafx.h"
 #include "memory.h"
-#include "msg.h"
-#include "array.h"
+#include "net_msg.h"
+#include "net_array.h"
 
-static void array_push_back(struct ARRAY *a, void *obj)
+static void net_array_push_back(struct NET_ARRAY *a, void *obj)
 {
-	array_append(a, obj);
+	net_array_append(a, obj);
 }
 
-static void array_push_front(struct ARRAY *a, void *obj)
+static void net_array_push_front(struct NET_ARRAY *a, void *obj)
 {
-	array_prepend(a, obj);
+	net_array_prepend(a, obj);
 }
 
-static void *array_pop_back(struct ARRAY *a)
+static void *net_array_pop_back(struct NET_ARRAY *a)
 {
 	void *obj;
 	if (a->count <= 0) {
@@ -24,7 +24,7 @@ static void *array_pop_back(struct ARRAY *a)
 	return obj;
 }
 
-static void *array_pop_front(struct ARRAY *a)
+static void *net_array_pop_front(struct NET_ARRAY *a)
 {
 	void *obj;
 	int   i;
@@ -41,9 +41,9 @@ static void *array_pop_front(struct ARRAY *a)
 	return obj;
 }
 
-/* array_iter_head - get the head of the array */
+/* net_array_iter_head - get the head of the array */
 
-static void *array_iter_head(ITER *iter, struct ARRAY *a)
+static void *net_array_iter_head(ITER *iter, struct NET_ARRAY *a)
 {
 	iter->dlen = -1;
 	iter->key = NULL;
@@ -59,9 +59,9 @@ static void *array_iter_head(ITER *iter, struct ARRAY *a)
 	return iter->ptr;
 }
 
-/* array_iter_next - get the next of the array */
+/* net_array_iter_next - get the next of the array */
 
-static void *array_iter_next(ITER *iter, struct ARRAY *a)
+static void *net_array_iter_next(ITER *iter, struct NET_ARRAY *a)
 {
 	iter->i++;
 	if (iter->i >= a->count) {
@@ -72,9 +72,9 @@ static void *array_iter_next(ITER *iter, struct ARRAY *a)
 	return iter->ptr;
 }
  
-/* array_iter_tail - get the tail of the array */
+/* net_array_iter_tail - get the tail of the array */
 
-static void *array_iter_tail(ITER *iter, struct ARRAY *a)
+static void *net_array_iter_tail(ITER *iter, struct NET_ARRAY *a)
 {
 	iter->dlen = -1;
 	iter->key = NULL;
@@ -89,9 +89,9 @@ static void *array_iter_tail(ITER *iter, struct ARRAY *a)
 	return iter->ptr;
 }
 
-/* array_iter_prev - get the prev of the array */
+/* net_array_iter_prev - get the prev of the array */
 
-static void *array_iter_prev(ITER *iter, struct ARRAY *a)
+static void *net_array_iter_prev(ITER *iter, struct NET_ARRAY *a)
 {
 	iter->i--;
 	if (iter->i < 0) {
@@ -103,7 +103,7 @@ static void *array_iter_prev(ITER *iter, struct ARRAY *a)
 }
 
 /* grows internal buffer to satisfy required minimal capacity */
-static void array_grow(ARRAY *a, int min_capacity)
+static void net_array_grow(NET_ARRAY *a, int min_capacity)
 {
 	int min_delta = 16;
 	int delta;
@@ -136,31 +136,31 @@ static void array_grow(ARRAY *a, int min_capacity)
 		(a->capacity - a->count) * sizeof(void *));
 }
 
-ARRAY *array_create(int init_size)
+NET_ARRAY *net_array_create(int init_size)
 {
-	ARRAY *a;
+	NET_ARRAY *a;
 
-	a = (ARRAY *) mem_calloc(1, sizeof(ARRAY));
+	a = (NET_ARRAY *) mem_calloc(1, sizeof(NET_ARRAY));
 
-	a->push_back  = array_push_back;
-	a->push_front = array_push_front;
-	a->pop_back   = array_pop_back;
-	a->pop_front  = array_pop_front;
-	a->iter_head  = array_iter_head;
-	a->iter_next  = array_iter_next;
-	a->iter_tail  = array_iter_tail;
-	a->iter_prev  = array_iter_prev;
+	a->push_back  = net_array_push_back;
+	a->push_front = net_array_push_front;
+	a->pop_back   = net_array_pop_back;
+	a->pop_front  = net_array_pop_front;
+	a->iter_head  = net_array_iter_head;
+	a->iter_next  = net_array_iter_next;
+	a->iter_tail  = net_array_iter_tail;
+	a->iter_prev  = net_array_iter_prev;
 
 	if(init_size <= 0) {
 		init_size = 100;
 	}
 
-	array_pre_append(a, init_size);
+	net_array_pre_append(a, init_size);
 
 	return a;
 }
 
-void array_clean(ARRAY *a, void (*free_fn)(void *))
+void net_array_clean(NET_ARRAY *a, void (*free_fn)(void *))
 {
 	int	idx;
 
@@ -173,25 +173,25 @@ void array_clean(ARRAY *a, void (*free_fn)(void *))
 	a->count = 0;
 }
 
-void array_free(ARRAY *a, void (*free_fn)(void *))
+void net_array_free(NET_ARRAY *a, void (*free_fn)(void *))
 {
-	array_clean(a, free_fn);
+	net_array_clean(a, free_fn);
 	if (a->items) {
 		mem_free(a->items);
 	}
 	mem_free(a);
 }
 
-int array_append(ARRAY *a, void *obj)
+int net_array_append(NET_ARRAY *a, void *obj)
 {
 	if (a->count >= a->capacity) {
-		array_grow(a, a->count + 16);
+		net_array_grow(a, a->count + 16);
 	}
 	a->items[a->count++] = obj;
 	return a->count - 1;
 }
 
-int array_pred_insert(ARRAY *a, int position, void *obj)
+int net_array_pred_insert(NET_ARRAY *a, int position, void *obj)
 {
 	int	idx;
 
@@ -204,7 +204,7 @@ int array_pred_insert(ARRAY *a, int position, void *obj)
 	}
 
 	if(a->count >= a->capacity) {
-		array_grow(a, a->count + 1);
+		net_array_grow(a, a->count + 1);
 	}
 
 	/* NOTICE: the C's index begin with 0
@@ -222,7 +222,7 @@ int array_pred_insert(ARRAY *a, int position, void *obj)
 	return position;
 }
 
-int array_succ_insert(ARRAY *a, int position, void *obj)
+int net_array_succ_insert(NET_ARRAY *a, int position, void *obj)
 {
 	int	idx, position_succ;
 
@@ -235,7 +235,7 @@ int array_succ_insert(ARRAY *a, int position, void *obj)
 	}
 
 	if (a->count >= a->capacity) {
-		array_grow(a, a->count + 1);
+		net_array_grow(a, a->count + 1);
 	}
 
 	position_succ = position + 1;
@@ -256,12 +256,12 @@ int array_succ_insert(ARRAY *a, int position, void *obj)
 	return position_succ;
 }
 
-int array_prepend(ARRAY *a, void *obj)
+int net_array_prepend(NET_ARRAY *a, void *obj)
 {
-	return array_pred_insert(a, 0, obj);
+	return net_array_pred_insert(a, 0, obj);
 }
 
-int array_delete_idx(ARRAY *a, int position, void (*free_fn)(void *))
+int net_array_delete_idx(NET_ARRAY *a, int position, void (*free_fn)(void *))
 {
 	int	idx;
 
@@ -280,7 +280,7 @@ int array_delete_idx(ARRAY *a, int position, void (*free_fn)(void *))
 	return 0;
 }
 
-int array_delete(ARRAY *a, int idx, void (*free_fn)(void*))
+int net_array_delete(NET_ARRAY *a, int idx, void (*free_fn)(void*))
 {
 	if (idx < 0 || idx >= a->count) {
 		return  -1;
@@ -295,7 +295,7 @@ int array_delete(ARRAY *a, int idx, void (*free_fn)(void*))
 	return 0;
 }
 
-int array_delete_obj(ARRAY *a, void *obj, void (*free_fn)(void *))
+int net_array_delete_obj(NET_ARRAY *a, void *obj, void (*free_fn)(void *))
 {
 	int   idx, position, ret;
 
@@ -314,16 +314,16 @@ int array_delete_obj(ARRAY *a, void *obj, void (*free_fn)(void *))
 		return -1;
 	}
 
-	/* don't need to free the obj in array_delete_idx */
+	/* don't need to free the obj in net_array_delete_idx */
 	a->items[idx] = NULL;
-	ret = array_delete_idx(a, position, NULL);
+	ret = net_array_delete_idx(a, position, NULL);
 	if (ret < 0) {
 		return -1;
 	}
 	return ret;
 }
 
-int array_delete_range(ARRAY *a, int ibegin, int iend,
+int net_array_delete_range(NET_ARRAY *a, int ibegin, int iend,
 	void (*free_fn)(void*))
 {
 	int   i, imax;
@@ -358,7 +358,7 @@ int array_delete_range(ARRAY *a, int ibegin, int iend,
 	return 0;
 }
 
-int array_mv_idx(ARRAY *a, int ito, int ifrom, void (*free_fn)(void *))
+int net_array_mv_idx(NET_ARRAY *a, int ito, int ifrom, void (*free_fn)(void *))
 {
 	int   i, i_obj, i_src, i_max;
 
@@ -397,20 +397,20 @@ int array_mv_idx(ARRAY *a, int ito, int ifrom, void (*free_fn)(void *))
 /* if you are going to append a known and large number of items,
  * call this first
  */
-void array_pre_append(ARRAY *a, int app_count)
+void net_array_pre_append(NET_ARRAY *a, int app_count)
 {
-	const char *name = "array_pre_append";
+	const char *name = "net_array_pre_append";
 
 	if (app_count <= 0) {
-		msg_fatal("%s(%d)->%s: invalid input", __FILE__, __LINE__, name);
+		net_msg_fatal("%s(%d)->%s: invalid input", __FILE__, __LINE__, name);
 	}
 
 	if (a->count + app_count > a->capacity) {
-		array_grow(a, a->count + app_count);
+		net_array_grow(a, a->count + app_count);
 	}
 }
 
-void *array_index(const ARRAY *a, int idx)
+void *net_array_index(const NET_ARRAY *a, int idx)
 {
 	if (idx < 0 || idx > a->count - 1) {
 		return NULL;
@@ -419,7 +419,7 @@ void *array_index(const ARRAY *a, int idx)
 	return a->items[idx];
 }
 
-int array_size(const ARRAY *a)
+int net_array_size(const NET_ARRAY *a)
 {
 	return a->count;
 }

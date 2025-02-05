@@ -1,6 +1,10 @@
 #ifndef	__DEFINE_INCLUDE_H__
 #define	__DEFINE_INCLUDE_H__
 
+#ifdef	__cplusplus
+extern "C" {
+#endif
+
 #if defined(__linux__)
 # define LINUX
 # define SYS_UNIX
@@ -120,7 +124,7 @@ typedef int socket_t;
 #endif
 
 # include <stdint.h>
-typedef intptr_t acl_handle_t;
+typedef intptr_t net_handle_t;
 
 #ifndef event_unused
 # ifdef	__GNUC__
@@ -160,9 +164,13 @@ typedef intptr_t acl_handle_t;
 #define	DEPRECATED_FOR(f)	DEPRECATED
 #endif	/* __GNUC__ */
 
-#define EVENT_TYPE_KERNEL      0       /* epoll/kqueue/iocp    */
-#define EVENT_TYPE_POLL        1       /* poll                 */
-#define EVENT_TYPE_SELECT      2       /* select               */
-#define EVENT_TYPE_WMSG        3       /* win message          */
+#define NET_EVENT_TYPE_KERNEL      0       /* epoll/kqueue/iocp    */
+#define NET_EVENT_TYPE_POLL        1       /* poll                 */
+#define NET_EVENT_TYPE_SELECT      2       /* select               */
+#define NET_EVENT_TYPE_WMSG        3       /* win message          */
+
+#ifdef	__cplusplus
+}
+#endif
 
 #endif /* __DEFINE_INCLUDE_H__ */

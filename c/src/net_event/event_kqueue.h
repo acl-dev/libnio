@@ -1,11 +1,11 @@
 #ifndef	EVENT_KQUEUE_INCLUDE_H
 #define	EVENT_KQUEUE_INCLUDE_H
 
-#include "event.h"
+#include "net_event.h"
 
 #ifdef	HAS_KQUEUE
 
-EVENT *event_kqueue_create(int setsize);
+NET_EVENT *net_kqueue_create(int setsize);
 
 #endif
 

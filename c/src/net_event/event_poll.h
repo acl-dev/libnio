@@ -1,11 +1,11 @@
 #ifndef EVENT_POLL_INCLUDE_H
 #define EVENT_POLL_INCLUDE_H
 
-#include "event.h"
+#include "net_event.h"
 
 #ifdef HAS_POLL
 
-EVENT *event_poll_create(int setsize);
+NET_EVENT *net_poll_create(int setsize);
 
 #endif
 

@@ -11,12 +11,13 @@
 #include <sys/time.h>
 #include <signal.h>
 
-#include "event.h"
-#include "iostuff.h"
+#include "net_event.h"
+#include "net_iostuff.h"
 
 typedef struct {
 	int max_loop;
 	int cocurrent;
+	int finished;
 	int stop;
 	int count;
 } gio_ctx_t;
@@ -49,8 +50,8 @@ static socket_t connect_server(const char *ip, int port) {
 	sa.sin_addr.s_addr = inet_addr(ip);
 
 	int fd = socket(PF_INET, SOCK_STREAM, 0);
-	non_blocking(fd, 1);
-	tcp_nodelay(fd, 0);
+	net_non_blocking(fd, 1);
+	net_tcp_nodelay(fd, 0);
 
 	int on = 1;
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
@@ -65,27 +66,30 @@ static socket_t connect_server(const char *ip, int port) {
 	return fd;
 }
 
-static void close_connection(EVENT *ev, FILE_EVENT *fe) {
+static void close_connection(NET_EVENT *ev, NET_FILE *fe) {
 	io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
-	event_close(ev, fe);
+	net_event_close(ev, fe);
 	close(fe->fd);
-	file_event_free(fe);
+	net_file_free(fe);
 
-	if (--ctx->gctx->cocurrent <= 0) {
+	if (++ctx->gctx->finished >= ctx->gctx->cocurrent) {
 		ctx->gctx->stop = 1;
+		printf("All connections closed, finished=%d, cocurrent=%d\r\n",
+			ctx->gctx->finished, ctx->gctx->cocurrent);
 	}
 
 	free(ctx);
 }
 
-static void read_callback(EVENT *ev, FILE_EVENT *fe) {
+static void read_callback(NET_EVENT *ev, NET_FILE *fe) {
 	io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
 	char buf[1024];
 	int ret = read(fe->fd, buf, sizeof(buf) - 1);
 	if (ret <= 0) {
 		close_connection(ev, fe);
 	} else if (++ctx->gctx->count >= ctx->gctx->max_loop) {
-		printf("All over, stop now!\r\n");
+		printf("All over, stop now, count=%d, max=%d!\r\n",
+			ctx->gctx->count, ctx->gctx->max_loop);
 		ctx->gctx->stop = 1;
 	} else if (write(fe->fd, buf, ret) <= 0) {
 		close_connection(ev, fe);
@@ -95,14 +99,14 @@ static void read_callback(EVENT *ev, FILE_EVENT *fe) {
 	}
 }
 
-static void connect_callback(EVENT *ev, FILE_EVENT *fe) {
-	event_del_write(ev, fe);
+static void connect_callback(NET_EVENT *ev, NET_FILE *fe) {
+	net_event_del_write(ev, fe);
 
 	const char *s = "hello world!\r\n";
 	if (write(fe->fd, s, strlen(s)) == -1) {
 		close_connection(ev, fe);
 	} else {
-		event_add_read(ev, fe, read_callback);
+		net_event_add_read(ev, fe, read_callback);
 	}
 }
 
@@ -116,7 +120,7 @@ static void usage(const char *procname) {
 }
 
 int main(int argc, char *argv[]) {
-	int ch, port = 8088, event_type = EVENT_TYPE_KERNEL;
+	int ch, port = 8088, event_type = NET_EVENT_TYPE_KERNEL;
 	int cocurrent = 10, max_loop = 100;
 	char addr[64], event_type_s[64];
 
@@ -149,19 +153,20 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (strcasecmp(event_type_s, "kernel") == 0) {
-		event_type = EVENT_TYPE_KERNEL;
+		event_type = NET_EVENT_TYPE_KERNEL;
 	} else if (strcasecmp(event_type_s, "poll") == 0) {
-		event_type = EVENT_TYPE_POLL;
+		event_type = NET_EVENT_TYPE_POLL;
 	} else if (strcasecmp(event_type_s, "select") == 0) {
-		event_type = EVENT_TYPE_SELECT;
+		event_type = NET_EVENT_TYPE_SELECT;
 	}
 
-	EVENT *ev = event_create(1024000, event_type);
+	NET_EVENT *ev = net_event_create(1024000, event_type);
 	assert(ev);
 
 	gio_ctx_t *gctx = calloc(1, sizeof(gio_ctx_t));
 	gctx->max_loop = max_loop;
 	gctx->cocurrent = cocurrent;
+	gctx->finished  = 0;
 
 	int i;
 	for (i = 0; i < cocurrent; i++) {
@@ -171,18 +176,18 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 
-		FILE_EVENT *fe = file_event_alloc(fd);
+		NET_FILE *fe = net_file_alloc(fd);
 		io_ctx_t *ctx = calloc(1, sizeof(io_ctx_t));
 		ctx->gctx = gctx;
 		fe->ctx   = ctx;
-		event_add_write(ev, fe, connect_callback);
+		net_event_add_write(ev, fe, connect_callback);
 	}
 
 	struct timeval begin;
 	gettimeofday(&begin, NULL);
 
 	while (!gctx->stop) {
-		event_wait(ev, 1000);
+		net_event_wait(ev, 1000);
 	}
 
 	struct timeval end;

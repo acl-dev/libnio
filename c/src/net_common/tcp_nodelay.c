@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
-#include "msg.h"
-#include "iostuff.h"
+#include "net_msg.h"
+#include "net_iostuff.h"
 
 static int getsocktype(socket_t fd)
 {
@@ -28,7 +28,7 @@ static int getsocktype(socket_t fd)
 	return -1;
 }
 
-void tcp_nodelay(socket_t fd, int onoff)
+void net_tcp_nodelay(socket_t fd, int onoff)
 {
 	const char *myname = "tcp_nodelay";
 	int   on = onoff ? 1 : 0;
@@ -41,7 +41,7 @@ void tcp_nodelay(socket_t fd, int onoff)
 	if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
 		(char *) &on, sizeof(on)) < 0) {
 
-		msg_error("%s(%d): set nodelay error(%d), onoff(%d)",
-			myname, __LINE__, last_error(), onoff);
+		net_msg_error("%s(%d): set nodelay error(%d), onoff(%d)",
+			myname, __LINE__, net_last_error(), onoff);
 	}
 }

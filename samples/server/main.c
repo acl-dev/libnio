@@ -10,8 +10,8 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
-#include "event.h"
-#include "iostuff.h"
+#include "net_event.h"
+#include "net_iostuff.h"
 
 static socket_t listen_addr(const char *ip, int port) {
 	struct sockaddr_in sa;
@@ -36,21 +36,21 @@ static socket_t listen_addr(const char *ip, int port) {
 	return lfd;
 }
 
-static void read_callback(EVENT *ev, FILE_EVENT *fe) {
+static void read_callback(NET_EVENT *ev, NET_FILE *fe) {
 	char buf[1024];
 	int ret = read(fe->fd, buf, sizeof(buf));
 	if (ret <= 0) {
-		event_close(ev, fe);
+		net_event_close(ev, fe);
 		close(fe->fd);
-		file_event_free(fe);
+		net_file_free(fe);
 	} else if (write(fe->fd, buf, ret) <= 0) {
-		event_close(ev, fe);
+		net_event_close(ev, fe);
 		close(fe->fd);
-		file_event_free(fe);
+		net_file_free(fe);
 	}
 }
 
-static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
+static void listen_callback(NET_EVENT *ev, NET_FILE *fe) {
 	struct sockaddr_in sa;
 	socklen_t len = (socklen_t) sizeof(sa);
 	memset(&sa, 0, sizeof(sa));
@@ -59,10 +59,10 @@ static void listen_callback(EVENT *ev, FILE_EVENT *fe) {
 		printf("accept error %s\r\n", strerror(errno));
 	} else {
 		printf("accept one fd %d\r\n", cfd);
-		non_blocking(cfd, 1);
-		tcp_nodelay(cfd, 1);
-		fe = file_event_alloc(cfd);
-		event_add_read(ev, fe, read_callback);
+		net_non_blocking(cfd, 1);
+		net_tcp_nodelay(cfd, 1);
+		fe = net_file_alloc(cfd);
+		net_event_add_read(ev, fe, read_callback);
 	}
 }
 
@@ -74,7 +74,7 @@ static void usage(const char *procname) {
 }
 
 int main(int argc, char *argv[]) {
-	int ch, port = 8088, event_type = EVENT_TYPE_KERNEL;
+	int ch, port = 8088, event_type = NET_EVENT_TYPE_KERNEL;
 	char addr[64], event_type_s[64];
 
 	signal(SIGPIPE, SIG_IGN);
@@ -106,26 +106,26 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	printf("FILE_EVENT size is %zd\r\n", sizeof(FILE_EVENT));
+	printf("NET_FILE size is %zd\r\n", sizeof(NET_FILE));
 
 	printf("listen on %s:%d\r\n", addr, port);
 
 	if (strcasecmp(event_type_s, "kernel") == 0) {
-		event_type = EVENT_TYPE_KERNEL;
+		event_type = NET_EVENT_TYPE_KERNEL;
 	} else if (strcasecmp(event_type_s, "poll") == 0) {
-		event_type = EVENT_TYPE_POLL;
+		event_type = NET_EVENT_TYPE_POLL;
 	} else if (strcasecmp(event_type_s, "select") == 0) {
-		event_type = EVENT_TYPE_SELECT;
+		event_type = NET_EVENT_TYPE_SELECT;
 	}
 
-	EVENT *ev = event_create(1024000, event_type);
+	NET_EVENT *ev = net_event_create(1024000, event_type);
 	assert(ev);
 
-	FILE_EVENT *fe = file_event_alloc(lfd);
-	event_add_read(ev, fe, listen_callback);
+	NET_FILE *fe = net_file_alloc(lfd);
+	net_event_add_read(ev, fe, listen_callback);
 
 	while (1) {
-		event_wait(ev, 1000);
+		net_event_wait(ev, 1000);
 	}
 
 	return 0;

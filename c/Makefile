@@ -129,13 +129,13 @@ OBJ_PATH_DST = ./debug
 
 SRC_PATH_SRC = ./src
 
-INC_COMPILE  = -I./include -I./src -I./src/common
+INC_COMPILE  = -I./include -I./src -I./src/net_common
 CFLAGS += $(INC_COMPILE)
 
 #Project's objs
 SRC = $(wildcard $(SRC_PATH_SRC)/*.c) \
-      $(wildcard $(SRC_PATH_SRC)/common/*.c) \
-      $(wildcard $(SRC_PATH_SRC)/event/*.c)
+      $(wildcard $(SRC_PATH_SRC)/net_common/*.c) \
+      $(wildcard $(SRC_PATH_SRC)/net_event/*.c)
 
 OBJ = $(patsubst %.c, $(OBJ_PATH_DST)/%.o, $(notdir $(SRC)))
 
@@ -192,9 +192,9 @@ shared: $(OBJ)
 
 $(OBJ_PATH_DST)/%.o: $(SRC_PATH_SRC)/%.c
 	$(COMPILE) $< -o $@
-$(OBJ_PATH_DST)/%.o: $(SRC_PATH_SRC)/common/%.c
+$(OBJ_PATH_DST)/%.o: $(SRC_PATH_SRC)/net_common/%.c
 	$(COMPILE) $< -o $@
-$(OBJ_PATH_DST)/%.o: $(SRC_PATH_SRC)/event/%.c
+$(OBJ_PATH_DST)/%.o: $(SRC_PATH_SRC)/net_event/%.c
 	$(COMPILE) $< -o $@
 
 clean cl:
