@@ -105,8 +105,9 @@ static void connect_callback(NET_EVENT *ev, NET_FILE *fe) {
 	const char *s = "hello world!\r\n";
 	if (write(fe->fd, s, strlen(s)) == -1) {
 		close_connection(ev, fe);
-	} else {
-		net_event_add_read(ev, fe, read_callback);
+	} else if (!net_event_add_read(ev, fe, read_callback)) {
+		printf("Add event read error, fd=%d\r\n", fe->fd);
+		close_connection(ev, fe);
 	}
 }
 
@@ -116,18 +117,19 @@ static void usage(const char *procname) {
 		" -t event_type[kernel|poll|select]\r\n"
 		" -c cocurrent\r\n"
 		" -n max_loop\r\n"
+		" -m file_max[default: 102400]\r\n"
 		, procname);
 }
 
 int main(int argc, char *argv[]) {
 	int ch, port = 8088, event_type = NET_EVENT_TYPE_KERNEL;
-	int cocurrent = 10, max_loop = 100;
+	int cocurrent = 10, max_loop = 100, file_max = 102400;
 	char addr[64], event_type_s[64];
 
 	signal(SIGPIPE, SIG_IGN);
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 
-	while ((ch = getopt(argc, argv, "hs:p:t:c:n:")) > 0) {
+	while ((ch = getopt(argc, argv, "hs:p:t:c:n:m:")) > 0) {
 		switch (ch) {
 		case 'h':
 			usage(argv[0]);
@@ -147,6 +149,9 @@ int main(int argc, char *argv[]) {
 		case 'n':
 			max_loop = atoi(optarg);
 			break;
+		case 'm':
+			file_max = atoi(optarg);
+			break;
 		default:
 			break;
 		}
@@ -160,7 +165,7 @@ int main(int argc, char *argv[]) {
 		event_type = NET_EVENT_TYPE_SELECT;
 	}
 
-	NET_EVENT *ev = net_event_create(1024000, event_type);
+	NET_EVENT *ev = net_event_create(file_max, event_type);
 	assert(ev);
 
 	gio_ctx_t *gctx = calloc(1, sizeof(gio_ctx_t));
@@ -180,7 +185,12 @@ int main(int argc, char *argv[]) {
 		io_ctx_t *ctx = calloc(1, sizeof(io_ctx_t));
 		ctx->gctx = gctx;
 		fe->ctx   = ctx;
-		net_event_add_write(ev, fe, connect_callback);
+		if (!net_event_add_write(ev, fe, connect_callback)) {
+			printf("Add one fd=%d error\r\n", fd);
+			close(fd);
+			net_file_free(fe);
+			break;
+		}
 	}
 
 	struct timeval begin;

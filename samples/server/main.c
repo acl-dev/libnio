@@ -62,7 +62,11 @@ static void listen_callback(NET_EVENT *ev, NET_FILE *fe) {
 		net_non_blocking(cfd, 1);
 		net_tcp_nodelay(cfd, 1);
 		fe = net_file_alloc(cfd);
-		net_event_add_read(ev, fe, read_callback);
+		if (!net_event_add_read(ev, fe, read_callback)) {
+			printf("Add event read error for fd=%d\r\n", fe->fd);
+			close(cfd);
+			net_file_free(fe);
+		}
 	}
 }
 
@@ -70,18 +74,19 @@ static void usage(const char *procname) {
 	printf("usage: %s -s listen_ip\r\n"
 		" -p listen_port\r\n"
 		" -t event_type[kernel|poll|select]\r\n"
+		" -m file_max[default: 102400]\r\n"
 		, procname);
 }
 
 int main(int argc, char *argv[]) {
-	int ch, port = 8088, event_type = NET_EVENT_TYPE_KERNEL;
+	int ch, port = 8088, event_type = NET_EVENT_TYPE_KERNEL, file_max = 102400;
 	char addr[64], event_type_s[64];
 
 	signal(SIGPIPE, SIG_IGN);
 
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 
-	while ((ch = getopt(argc, argv, "hs:p:t:")) > 0) {
+	while ((ch = getopt(argc, argv, "hs:p:t:m:")) > 0) {
 		switch (ch) {
 		case 'h':
 			usage(argv[0]);
@@ -94,6 +99,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 't':
 			snprintf(event_type_s, sizeof(event_type_s), "%s", optarg);
+			break;
+		case 'm':
+			file_max = atoi(optarg);
 			break;
 		default:
 			break;
@@ -118,11 +126,17 @@ int main(int argc, char *argv[]) {
 		event_type = NET_EVENT_TYPE_SELECT;
 	}
 
-	NET_EVENT *ev = net_event_create(1024000, event_type);
+	NET_EVENT *ev = net_event_create(file_max, event_type);
 	assert(ev);
 
 	NET_FILE *fe = net_file_alloc(lfd);
-	net_event_add_read(ev, fe, listen_callback);
+
+	if (!net_event_add_read(ev, fe, listen_callback)) {
+		printf("Add listen to event error, fd=%d\r\n", fe->fd);
+		close(fe->fd);
+		net_file_free(fe);
+		return 1;
+	}
 
 	while (1) {
 		net_event_wait(ev, 1000);
