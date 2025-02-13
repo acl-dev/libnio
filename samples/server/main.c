@@ -79,7 +79,7 @@ static void usage(const char *procname) {
 }
 
 int main(int argc, char *argv[]) {
-	int ch, port = 8088, event_type = NET_EVENT_TYPE_KERNEL, file_max = 102400;
+	int ch, port = 8288, event_type = NET_EVENT_TYPE_KERNEL, file_max = 102400;
 	char addr[64], event_type_s[64];
 
 	signal(SIGPIPE, SIG_IGN);
