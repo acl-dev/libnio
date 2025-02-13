@@ -1,13 +1,11 @@
 #ifndef _MSG_INCLUDE_H_
 #define _MSG_INCLUDE_H_
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>
-#include "define.h"
+#include "net_define.h"
+
+void net_msg_stdout(int on);
 
 #undef	USE_PRINTF_MACRO
 
@@ -73,9 +71,5 @@ void PRINTF(1, 2) net_msg_fatal(const char *fmt,...);
  * @param ... ±‰≤Œ–Ú¡–
  */
 void PRINTF(1, 2) net_msg_printf(const char *fmt,...);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif

@@ -1,14 +1,16 @@
 #ifndef __STD_AFX_INCLUDE_H__
 #define __STD_AFX_INCLUDE_H__
 
-#include "define.h"
+#include "net_define.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 # define LIKELY
 # define UNLIKELY
+# define GETPID _getpid
 #else
 # define LIKELY(x)   __builtin_expect(!!(x), 1)
 # define UNLIKELY(x) __builtin_expect(!!(x), 0)
+# define GETPID getpid
 #endif
 
 #ifndef _GNU_SOURCE

@@ -285,3 +285,8 @@ int net_event_wait(NET_EVENT *ev, int timeout)
 	return ret;
 }
 
+
+void net_event_debug(int on)
+{
+	net_msg_stdout(on);
+}

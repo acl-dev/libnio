@@ -1,5 +1,5 @@
-#ifndef	__DEFINE_INCLUDE_H__
-#define	__DEFINE_INCLUDE_H__
+#ifndef	__NET_DEFINE_INCLUDE_H__
+#define	__NET_DEFINE_INCLUDE_H__
 
 #ifdef	__cplusplus
 extern "C" {
@@ -173,4 +173,4 @@ typedef intptr_t net_handle_t;
 }
 #endif
 
-#endif /* __DEFINE_INCLUDE_H__ */
+#endif /* __NET_DEFINE_INCLUDE_H__ */

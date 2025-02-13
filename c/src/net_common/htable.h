@@ -1,10 +1,6 @@
 #ifndef HTABLE_INCLUDE_H
 #define HTABLE_INCLUDE_H
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "iterator.h"
 
 /*--------------------------------------------------------------------------*/
@@ -179,9 +175,5 @@ void htable_stat(const HTABLE *table);
 
 #define	HTABLE_ITER_VALUE(iter)	((iter).ptr->value)
 #define	htable_iter_value	HTABLE_ITER_VALUE
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif

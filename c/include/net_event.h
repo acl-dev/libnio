@@ -1,7 +1,7 @@
 #ifndef EVENT_INCLUDE_H
 #define EVENT_INCLUDE_H
 
-#include "define.h"
+#include "net_define.h"
 #include "net_ring.h"
 
 #ifdef	HAS_EPOLL
@@ -192,6 +192,8 @@ int  net_event_add_write(NET_EVENT *ev, NET_FILE *fe, net_event_proc *proc);
 void net_event_del_read(NET_EVENT *ev, NET_FILE *fe);
 void net_event_del_write(NET_EVENT *ev, NET_FILE *fe);
 int  net_event_wait(NET_EVENT *ev, int left);
+
+void net_event_debug(int on);
 
 #ifdef	__cplusplus
 }

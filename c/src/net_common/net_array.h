@@ -1,10 +1,6 @@
 #ifndef	__NET_ARRAY_INCLUDE_H__
 #define	__NET_ARRAY_INCLUDE_H__
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include "iterator.h"
 
 /**
@@ -176,10 +172,6 @@ void *net_array_index(const NET_ARRAY *a, int idx);
  * @return {int} 动态数组中动态对象的个数
  */
 int net_array_size(const NET_ARRAY *a);
-
-#ifdef  __cplusplus
-}
-#endif
 
 #endif
 
