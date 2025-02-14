@@ -21,7 +21,7 @@ typedef BOOL (PASCAL FAR* LPFN_CONNECTEX) (
 
 typedef struct EVENT_IOCP {
 	NET_EVENT  event;
-	NET_FILE **files;
+	NET_FILE_ **files;
 	int    size;
 	int    count;
 	HANDLE h_iocp;
@@ -37,14 +37,14 @@ struct IOCP_EVENT {
 #define	IOCP_EVENT_POLLR	(1 << 4)
 #define	IOCP_EVENT_POLLW	(1 << 4)
 	int   refer;
-	NET_FILE *fe;
+	NET_FILE_ *fe;
 	event_proc *proc;
 
 #define ACCEPT_ADDRESS_LENGTH ((sizeof(struct sockaddr_in) + 16))
 	char  myAddrBlock[ACCEPT_ADDRESS_LENGTH * 2];
 };
 
-static void iocp_remove(EVENT_IOCP *ev, NET_FILE *fe)
+static void iocp_remove(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	if (fe->id < --ev->count) {
 		ev->files[fe->id]     = ev->files[ev->count];
@@ -55,7 +55,7 @@ static void iocp_remove(EVENT_IOCP *ev, NET_FILE *fe)
 	ev->event.fdcount--;
 }
 
-static int iocp_close_sock(EVENT_IOCP *ev, NET_FILE *fe)
+static int iocp_close_sock(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	if (fe->h_iocp != NULL) {
 		fe->h_iocp = NULL;
@@ -134,7 +134,7 @@ static int iocp_close_sock(EVENT_IOCP *ev, NET_FILE *fe)
 	return 1;
 }
 
-static void iocp_check(EVENT_IOCP *ev, NET_FILE *fe)
+static void iocp_check(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	if (fe->id == -1) {
 		assert(ev->count < ev->size);
@@ -156,7 +156,7 @@ static void iocp_check(EVENT_IOCP *ev, NET_FILE *fe)
 	}
 }
 
-static int iocp_add_listen(EVENT_IOCP *ev, NET_FILE *fe)
+static int iocp_add_listen(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	DWORD    ReceiveLen = 0;
 	socket_t sock;
@@ -191,7 +191,7 @@ static int iocp_add_listen(EVENT_IOCP *ev, NET_FILE *fe)
 	}
 }
 
-static int iocp_add_read(EVENT_IOCP *ev, NET_FILE *fe)
+static int iocp_add_read(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	int ret;
 	WSABUF wsaData;
@@ -253,7 +253,7 @@ static int iocp_add_read(EVENT_IOCP *ev, NET_FILE *fe)
 	}
 }
 
-static int iocp_add_write(EVENT_IOCP *ev, NET_FILE *fe)
+static int iocp_add_write(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	DWORD sendBytes;
 	BOOL  ret;
@@ -308,7 +308,7 @@ static int iocp_add_write(EVENT_IOCP *ev, NET_FILE *fe)
 	}
 }
 
-static int iocp_del_read(EVENT_IOCP *ev, NET_FILE *fe)
+static int iocp_del_read(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	if (!(fe->mask & NET_EVENT_READ)) {
 		return 0;
@@ -330,7 +330,7 @@ static int iocp_del_read(EVENT_IOCP *ev, NET_FILE *fe)
 	return 0;
 }
 
-static int iocp_del_write(EVENT_IOCP *ev, NET_FILE *fe)
+static int iocp_del_write(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	if (!(fe->mask & NET_EVENT_WRITE)) {
 		return 0;
@@ -353,7 +353,7 @@ static int iocp_del_write(EVENT_IOCP *ev, NET_FILE *fe)
 }
 
 static void iocp_event_save(EVENT_IOCP *ei, IOCP_EVENT *event,
-	NET_FILE *fe, DWORD trans)
+	NET_FILE_ *fe, DWORD trans)
 {
 	if ((event->type & (IOCP_NET_EVENT_READ | IOCP_EVENT_POLLR))) {
 		fe->mask &= ~NET_EVENT_READ;
@@ -372,7 +372,7 @@ static int iocp_wait(NET_EVENT *ev, int timeout)
 
 	for (;;) {
 		DWORD bytesTransferred;
-		NET_FILE *fe;
+		NET_FILE_ *fe;
 		event = NULL;
 
 		BOOL isSuccess = GetQueuedCompletionStatus(ei->h_iocp,
@@ -417,7 +417,7 @@ static int iocp_wait(NET_EVENT *ev, int timeout)
 	/* peek and handle all IOCP NET_EVENT added in iocp_event_save(). */
 	while ((event = (IOCP_EVENT*) ei->events->pop_back(ei->events)) != NULL) {
 		if (event->proc && event->fe) {
-			event->proc(ev, event->fe);
+			event->proc(ev, ((NET_FILE*) event->fe);
 		}
 	}
 
@@ -436,7 +436,7 @@ static void iocp_free(NET_EVENT *ev)
 	mem_free(ei);
 }
 
-static int iocp_checkfd(EVENT_IOCP *ev, NET_FILE *fe)
+static int iocp_checkfd(EVENT_IOCP *ev, NET_FILE_ *fe)
 {
 	(void) ev;
 	return getsocktype(fe->fd) == -1 ? -1 : 0;
@@ -465,7 +465,7 @@ NET_EVENT *net_iocp_create(int size)
 
 	ei->events = net_array_create(100);
 
-	ei->files = (NET_FILE**) mem_calloc(size, sizeof(NET_FILE*));
+	ei->files = (NET_FILE_**) mem_calloc(size, sizeof(NET_FILE_*));
 	ei->size  = size;
 	ei->count = 0;
 

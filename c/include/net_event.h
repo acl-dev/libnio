@@ -28,11 +28,14 @@ typedef int socket_t;
 typedef struct NET_FILE         NET_FILE;
 typedef struct NET_EVENT        NET_EVENT;
 
-typedef int  net_event_oper(NET_EVENT *ev, NET_FILE *fe);
+struct NET_FILE {
+	socket_t fd;
+	void *ctx;
+};
+
 typedef void net_event_proc(NET_EVENT *ev, NET_FILE *fe);
 
 /* net_file.c */
-void net_file_init(NET_FILE *fe, socket_t fd);
 NET_FILE *net_file_alloc(socket_t fd);
 void net_file_free(NET_FILE *fe);
 

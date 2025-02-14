@@ -27,7 +27,7 @@ static void epoll_free(NET_EVENT *ev)
 	mem_free(ep);
 }
 
-static int epoll_add_read(EVENT_EPOLL *ep, NET_FILE *fe)
+static int epoll_add_read(EVENT_EPOLL *ep, NET_FILE_ *fe)
 {
 	struct epoll_event ee;
 	int op, n;
@@ -64,7 +64,7 @@ static int epoll_add_read(EVENT_EPOLL *ep, NET_FILE *fe)
 	return -1;
 }
 
-static int epoll_add_write(EVENT_EPOLL *ep, NET_FILE *fe)
+static int epoll_add_write(EVENT_EPOLL *ep, NET_FILE_ *fe)
 {
 	struct epoll_event ee;
 	int op, n;
@@ -98,7 +98,7 @@ static int epoll_add_write(EVENT_EPOLL *ep, NET_FILE *fe)
 	return -1;
 }
 
-static int epoll_del_read(EVENT_EPOLL *ep, NET_FILE *fe)
+static int epoll_del_read(EVENT_EPOLL *ep, NET_FILE_ *fe)
 {
 	struct epoll_event ee;
 	int op, n = 0;
@@ -130,7 +130,7 @@ static int epoll_del_read(EVENT_EPOLL *ep, NET_FILE *fe)
 	return -1;
 }
 
-static int epoll_del_write(EVENT_EPOLL *ep, NET_FILE *fe)
+static int epoll_del_write(EVENT_EPOLL *ep, NET_FILE_ *fe)
 {
 	struct epoll_event ee;
 	int op, n;
@@ -166,7 +166,7 @@ static int epoll_event_wait(NET_EVENT *ev, int timeout)
 {
 	EVENT_EPOLL *ep = (EVENT_EPOLL *) ev;
 	struct epoll_event *ee;
-	NET_FILE *fe;
+	NET_FILE_ *fe;
 	int n, i;
 
 	n = epoll_wait(ep->epfd, ep->events, ep->size, timeout);
@@ -182,23 +182,23 @@ static int epoll_event_wait(NET_EVENT *ev, int timeout)
 
 	for (i = 0; i < n; i++) {
 		ee = &ep->events[i];
-		fe = (NET_FILE *) ee->data.ptr;
+		fe = (NET_FILE_ *) ee->data.ptr;
 
 #define EVENT_ERR	(EPOLLERR | EPOLLHUP)
 
 		if (ee->events & (EPOLLIN | EVENT_ERR) && fe && fe->r_proc) {
-			fe->r_proc(ev, fe);
+			fe->r_proc(ev, (NET_FILE*) fe);
 		}
 
 		if (ee->events & (EPOLLOUT | EVENT_ERR) && fe && fe->w_proc) {
-			fe->w_proc(ev, fe);
+			fe->w_proc(ev, (NET_FILE*) fe);
 		}
 	}
 
 	return n;
 }
 
-static int epoll_checkfd(NET_EVENT *ev UNUSED, NET_FILE *fe UNUSED)
+static int epoll_checkfd(NET_EVENT *ev UNUSED, NET_FILE_ *fe UNUSED)
 {
 	if (ev->add_read(ev, fe) == -1) {
 		return -1;

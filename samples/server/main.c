@@ -38,14 +38,14 @@ static socket_t listen_addr(const char *ip, int port) {
 
 static void read_callback(NET_EVENT *ev, NET_FILE *fe) {
 	char buf[1024];
-	int ret = read(net_file_fd(fe), buf, sizeof(buf));
+	int ret = read(fe->fd, buf, sizeof(buf));
 	if (ret <= 0) {
 		net_event_close(ev, fe);
-		close(net_file_fd(fe));
+		close(fe->fd);
 		net_file_free(fe);
-	} else if (write(net_file_fd(fe), buf, ret) <= 0) {
+	} else if (write(fe->fd, buf, ret) <= 0) {
 		net_event_close(ev, fe);
-		close(net_file_fd(fe));
+		close(fe->fd);
 		net_file_free(fe);
 	}
 }
@@ -54,7 +54,7 @@ static void listen_callback(NET_EVENT *ev, NET_FILE *fe) {
 	struct sockaddr_in sa;
 	socklen_t len = (socklen_t) sizeof(sa);
 	memset(&sa, 0, sizeof(sa));
-	socket_t cfd = accept(net_file_fd(fe), (struct sockaddr*) &sa, &len);
+	socket_t cfd = accept(fe->fd, (struct sockaddr*) &sa, &len);
 	if (cfd == -1) {
 		printf("accept error %s\r\n", strerror(errno));
 	} else {
@@ -63,7 +63,7 @@ static void listen_callback(NET_EVENT *ev, NET_FILE *fe) {
 		net_tcp_nodelay(cfd, 1);
 		fe = net_file_alloc(cfd);
 		if (!net_event_add_read(ev, fe, read_callback)) {
-			printf("Add event read error for fd=%d\r\n", net_file_fd(fe));
+			printf("Add event read error for fd=%d\r\n", fe->fd);
 			close(cfd);
 			net_file_free(fe);
 		}
@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
 	NET_FILE *fe = net_file_alloc(lfd);
 
 	if (!net_event_add_read(ev, fe, listen_callback)) {
-		printf("Add listen to event error, fd=%d\r\n", net_file_fd(fe));
-		close(net_file_fd(fe));
+		printf("Add listen to event error, fd=%d\r\n", fe->fd);
+		close(fe->fd);
 		net_file_free(fe);
 		return 1;
 	}

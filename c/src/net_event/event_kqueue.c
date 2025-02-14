@@ -76,7 +76,7 @@ static int kqueue_fflush(EVENT_KQUEUE *ek)
 	return nchanges;
 }
 
-static int kqueue_add_read(EVENT_KQUEUE *ek, NET_FILE *fe)
+static int kqueue_add_read(EVENT_KQUEUE *ek, NET_FILE_ *fe)
 {
 	struct kevent *kev;
 
@@ -95,7 +95,7 @@ static int kqueue_add_read(EVENT_KQUEUE *ek, NET_FILE *fe)
 	return 0;
 }
 
-static int kqueue_add_write(EVENT_KQUEUE *ek, NET_FILE *fe)
+static int kqueue_add_write(EVENT_KQUEUE *ek, NET_FILE_ *fe)
 {
 	struct kevent *kev;
 
@@ -114,7 +114,7 @@ static int kqueue_add_write(EVENT_KQUEUE *ek, NET_FILE *fe)
 	return 0;
 }
 
-static int kqueue_del_read(EVENT_KQUEUE *ek, NET_FILE *fe)
+static int kqueue_del_read(EVENT_KQUEUE *ek, NET_FILE_ *fe)
 {
 	struct kevent *kev;
 
@@ -133,7 +133,7 @@ static int kqueue_del_read(EVENT_KQUEUE *ek, NET_FILE *fe)
 	return 0;
 }
 
-static int kqueue_del_write(EVENT_KQUEUE *ek, NET_FILE *fe)
+static int kqueue_del_write(EVENT_KQUEUE *ek, NET_FILE_ *fe)
 {
 	struct kevent *kev;
 
@@ -157,7 +157,7 @@ static int kqueue_wait(NET_EVENT *ev, int timeout)
 	EVENT_KQUEUE *ek = (EVENT_KQUEUE *) ev;
 	struct timespec ts;
 	struct kevent *kev;
-	NET_FILE *fe;
+	NET_FILE_ *fe;
 	int n, i;
 
 	ts.tv_sec = timeout / 1000;
@@ -178,21 +178,21 @@ static int kqueue_wait(NET_EVENT *ev, int timeout)
 
 	for (i = 0; i < n; i++) {
 		kev = &ek->events[i];
-		fe  = (NET_FILE *) kev->udata;
+		fe  = (NET_FILE_ *) kev->udata;
 
 		if (kev && kev->filter == EVFILT_READ && fe && fe->r_proc) {
-			fe->r_proc(ev, fe);
+			fe->r_proc(ev, (NET_FILE*) fe);
 		}
 
 		if (kev && kev->filter == EVFILT_WRITE && fe && fe->w_proc) {
-			fe->w_proc(ev, fe);
+			fe->w_proc(ev, (NET_FILE*) fe);
 		}
 	}
 
 	return n;
 }
 
-static int kqueue_checkfd(NET_EVENT *ev UNUSED, NET_FILE *fe UNUSED)
+static int kqueue_checkfd(NET_EVENT *ev UNUSED, NET_FILE_ *fe UNUSED)
 {
 	return -1;
 }

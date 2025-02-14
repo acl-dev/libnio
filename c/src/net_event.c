@@ -98,7 +98,7 @@ int net_event_add_read(NET_EVENT *ev, NET_FILE *fe, net_event_proc *proc)
 {
 	assert(fe);
 
-	if (fe->type == TYPE_NOSOCK) {
+	if (((NET_FILE_*) fe)->type == TYPE_NOSOCK) {
 		return 0;
 	}
 
@@ -107,28 +107,28 @@ int net_event_add_read(NET_EVENT *ev, NET_FILE *fe, net_event_proc *proc)
 		return 0;
 	}
 
-	if (fe->oper & NET_EVENT_DEL_READ) {
-		fe->oper &= ~NET_EVENT_DEL_READ;
+	if (((NET_FILE_*) fe)->oper & NET_EVENT_DEL_READ) {
+		((NET_FILE_*) fe)->oper &= ~NET_EVENT_DEL_READ;
 	}
 
-	if (!(fe->mask & NET_EVENT_READ)) {
-		if (fe->type == TYPE_NONE) {
+	if (!(((NET_FILE_*) fe)->mask & NET_EVENT_READ)) {
+		if (((NET_FILE_*) fe)->type == TYPE_NONE) {
 			if (checkfd(ev, fe) == -1) {
-				fe->type = TYPE_NOSOCK;
+				((NET_FILE_*) fe)->type = TYPE_NOSOCK;
 				return 0;
 			} else {
-				fe->type = TYPE_SOCK;
+				((NET_FILE_*) fe)->type = TYPE_SOCK;
 			}
 		}
 
-		if (fe->me.parent == &fe->me) {
-			net_ring_prepend(&ev->events, &fe->me);
+		if (((NET_FILE_*) fe)->me.parent == &((NET_FILE_*) fe)->me) {
+			net_ring_prepend(&ev->events, &((NET_FILE_*) fe)->me);
 		}
 
-		fe->oper |= NET_EVENT_ADD_READ;
+		((NET_FILE_*) fe)->oper |= NET_EVENT_ADD_READ;
 	}
 
-	fe->r_proc = proc;
+	((NET_FILE_*) fe)->r_proc = proc;
 	return 1;
 }
 
@@ -136,7 +136,7 @@ int net_event_add_write(NET_EVENT *ev, NET_FILE *fe, net_event_proc *proc)
 {
 	assert(fe);
 
-	if (fe->type == TYPE_NOSOCK) {
+	if (((NET_FILE_*) fe)->type == TYPE_NOSOCK) {
 		return 0;
 	}
 
@@ -145,28 +145,28 @@ int net_event_add_write(NET_EVENT *ev, NET_FILE *fe, net_event_proc *proc)
 		return 0;
 	}
 
-	if (fe->oper & NET_EVENT_DEL_WRITE) {
-		fe->oper &= ~NET_EVENT_DEL_WRITE;
+	if (((NET_FILE_*) fe)->oper & NET_EVENT_DEL_WRITE) {
+		((NET_FILE_*) fe)->oper &= ~NET_EVENT_DEL_WRITE;
 	}
 
-	if (!(fe->mask & NET_EVENT_WRITE)) {
-		if (fe->type == TYPE_NONE) {
+	if (!(((NET_FILE_*) fe)->mask & NET_EVENT_WRITE)) {
+		if (((NET_FILE_*) fe)->type == TYPE_NONE) {
 			if (checkfd(ev, fe) == -1) {
-				fe->type = TYPE_NOSOCK;
+				((NET_FILE_*) fe)->type = TYPE_NOSOCK;
 				return 0;
 			} else {
-				fe->type = TYPE_SOCK;
+				((NET_FILE_*) fe)->type = TYPE_SOCK;
 			}
 		}
 
-		if (fe->me.parent == &fe->me) {
-			net_ring_prepend(&ev->events, &fe->me);
+		if (((NET_FILE_*) fe)->me.parent == &((NET_FILE_*) fe)->me) {
+			net_ring_prepend(&ev->events, &((NET_FILE_*) fe)->me);
 		}
 
-		fe->oper |= NET_EVENT_ADD_WRITE;
+		((NET_FILE_*) fe)->oper |= NET_EVENT_ADD_WRITE;
 	}
 
-	fe->w_proc = proc;
+	((NET_FILE_*) fe)->w_proc = proc;
 	return 1;
 }
 
@@ -174,56 +174,56 @@ void net_event_del_read(NET_EVENT *ev, NET_FILE *fe)
 {
 	assert(fe);
 
-	if (fe->oper & NET_EVENT_ADD_READ) {
-		fe->oper &=~NET_EVENT_ADD_READ;
+	if (((NET_FILE_*) fe)->oper & NET_EVENT_ADD_READ) {
+		((NET_FILE_*) fe)->oper &=~NET_EVENT_ADD_READ;
 	}
 
-	if (fe->mask & NET_EVENT_READ) {
-		if (fe->me.parent == &fe->me) {
-			net_ring_prepend(&ev->events, &fe->me);
+	if (((NET_FILE_*) fe)->mask & NET_EVENT_READ) {
+		if (((NET_FILE_*) fe)->me.parent == &((NET_FILE_*) fe)->me) {
+			net_ring_prepend(&ev->events, &((NET_FILE_*) fe)->me);
 		}
 
-		fe->oper |= NET_EVENT_DEL_READ;
+		((NET_FILE_*) fe)->oper |= NET_EVENT_DEL_READ;
 	}
 
-	fe->r_proc  = NULL;
+	((NET_FILE_*) fe)->r_proc  = NULL;
 }
 
 void net_event_del_write(NET_EVENT *ev, NET_FILE *fe)
 {
 	assert(fe);
 
-	if (fe->oper & NET_EVENT_ADD_WRITE) {
-		fe->oper &= ~NET_EVENT_ADD_WRITE;
+	if (((NET_FILE_*) fe)->oper & NET_EVENT_ADD_WRITE) {
+		((NET_FILE_*) fe)->oper &= ~NET_EVENT_ADD_WRITE;
 	}
 
-	if (fe->mask & NET_EVENT_WRITE) {
-		if (fe->me.parent == &fe->me) {
-			net_ring_prepend(&ev->events, &fe->me);
+	if (((NET_FILE_*) fe)->mask & NET_EVENT_WRITE) {
+		if (((NET_FILE_*) fe)->me.parent == &((NET_FILE_*) fe)->me) {
+			net_ring_prepend(&ev->events, &((NET_FILE_*) fe)->me);
 		}
 
-		fe->oper |= NET_EVENT_DEL_WRITE;
+		((NET_FILE_*) fe)->oper |= NET_EVENT_DEL_WRITE;
 	}
 
-	fe->w_proc = NULL;
+	((NET_FILE_*) fe)->w_proc = NULL;
 }
 
 void net_event_close(NET_EVENT *ev, NET_FILE *fe)
 {
-	if (fe->mask & NET_EVENT_READ) {
-		ev->del_read(ev, fe);
+	if (((NET_FILE_*) fe)->mask & NET_EVENT_READ) {
+		ev->del_read(ev, ((NET_FILE_*) fe));
 	}
 
-	if (fe->mask & NET_EVENT_WRITE) {
-		ev->del_write(ev, fe);
+	if (((NET_FILE_*) fe)->mask & NET_EVENT_WRITE) {
+		ev->del_write(ev, ((NET_FILE_*) fe));
 	}
 
 	/* when one fiber add read/write and del read/write by another fiber
 	 * in one loop, the fe->mask maybe be 0 and the fiber's fe maybe been
 	 * added into events task list
 	 */
-	if (fe->me.parent != &fe->me) {
-		net_ring_detach(&fe->me);
+	if (((NET_FILE_*) fe)->me.parent != &((NET_FILE_*) fe)->me) {
+		net_ring_detach(&((NET_FILE_*) fe)->me);
 	}
 
 	if (ev->event_fflush) {
@@ -233,11 +233,11 @@ void net_event_close(NET_EVENT *ev, NET_FILE *fe)
 
 static void net_event_prepare(NET_EVENT *ev)
 {
-	NET_FILE *fe;
+	NET_FILE_ *fe;
 	NET_RING *next;
 
 	while ((next = net_ring_first(&ev->events))) {
-		fe = net_ring_to_appl(next, NET_FILE, me);
+		fe = net_ring_to_appl(next, NET_FILE_, me);
 
 		if (fe->oper & NET_EVENT_DEL_READ) {
 			ev->del_read(ev, fe);

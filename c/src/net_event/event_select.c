@@ -10,7 +10,7 @@ typedef struct EVENT_SELECT {
 	fd_set rset;
 	fd_set wset;
 	fd_set xset;
-	NET_FILE **files;
+	NET_FILE_ **files;
 	int    size;
 	int    count;
 	socket_t maxfd;
@@ -26,7 +26,7 @@ static void select_free(NET_EVENT *ev)
 	mem_free(es);
 }
 
-static int select_add_read(EVENT_SELECT *es, NET_FILE *fe)
+static int select_add_read(EVENT_SELECT *es, NET_FILE_ *fe)
 {
 	if (FD_ISSET(fe->fd, &es->wset) || FD_ISSET(fe->fd, &es->rset)) {
 		assert(fe->id >= 0 && fe->id < es->count);
@@ -47,7 +47,7 @@ static int select_add_read(EVENT_SELECT *es, NET_FILE *fe)
 	return 0;
 }
 
-static int select_add_write(EVENT_SELECT *es, NET_FILE *fe)
+static int select_add_write(EVENT_SELECT *es, NET_FILE_ *fe)
 {
 	if (FD_ISSET(fe->fd, &es->rset) || FD_ISSET(fe->fd, &es->wset)) {
 		assert(fe->id >= 0 && fe->id < es->count);
@@ -68,7 +68,7 @@ static int select_add_write(EVENT_SELECT *es, NET_FILE *fe)
 	return 0;
 }
 
-static int select_del_read(EVENT_SELECT *es, NET_FILE *fe)
+static int select_del_read(EVENT_SELECT *es, NET_FILE_ *fe)
 {
 	assert(fe->id >= 0 && fe->id < es->count);
 	if (FD_ISSET(fe->fd, &es->rset)) {
@@ -90,7 +90,7 @@ static int select_del_read(EVENT_SELECT *es, NET_FILE *fe)
 	return 0;
 }
 
-static int select_del_write(EVENT_SELECT *es, NET_FILE *fe)
+static int select_del_write(EVENT_SELECT *es, NET_FILE_ *fe)
 {
 	assert(fe->id >= 0 && fe->id < es->count);
 	if (FD_ISSET(fe->fd, &es->wset)) {
@@ -139,7 +139,7 @@ static int select_event_wait(NET_EVENT *ev, int timeout)
 	if (es->dirty) {
 		es->maxfd = -1;
 		for (i = 0; i < es->count; i++) {
-			NET_FILE *fe = es->files[i];
+			NET_FILE_ *fe = es->files[i];
 			if (fe->fd > es->maxfd) {
 				es->maxfd = fe->fd;
 			}
@@ -157,26 +157,26 @@ static int select_event_wait(NET_EVENT *ev, int timeout)
 	}
 
 	for (i = 0; i < es->count; i++) {
-		NET_FILE *fe = es->files[i];
+		NET_FILE_ *fe = es->files[i];
 		net_array_append(es->ready, fe);
 	}
 
 	foreach(iter, es->ready) {
-		NET_FILE *fe = (NET_FILE *) iter.data;
+		NET_FILE_ *fe = (NET_FILE_ *) iter.data;
 
 		if (FD_ISSET(fe->fd, &xset)) {
 			if (FD_ISSET(fe->fd, &es->rset) && fe->r_proc) {
-				fe->r_proc(ev, fe);
+				fe->r_proc(ev, (NET_FILE*) fe);
 			}
 			if (FD_ISSET(fe->fd, &es->wset) && fe->w_proc) {
-				fe->w_proc(ev, fe);
+				fe->w_proc(ev, (NET_FILE*) fe);
 			}
 		} else {
 			if (FD_ISSET(fe->fd, &rset) && fe->r_proc) {
-				fe->r_proc(ev, fe);
+				fe->r_proc(ev, (NET_FILE*) fe);
 			}
 			if (FD_ISSET(fe->fd, &wset) && fe->w_proc) {
-				fe->w_proc(ev, fe);
+				fe->w_proc(ev, (NET_FILE*) fe);
 			}
 		}
 	}
@@ -186,7 +186,7 @@ static int select_event_wait(NET_EVENT *ev, int timeout)
 	return n;
 }
 
-static int select_checkfd(NET_EVENT *ev UNUSED, NET_FILE *fe UNUSED)
+static int select_checkfd(NET_EVENT *ev UNUSED, NET_FILE_ *fe UNUSED)
 {
 	return -1;
 }
@@ -210,7 +210,7 @@ NET_EVENT *net_select_create(int size)
 	size      = net_open_limit(0);
 	es->maxfd = -1;
 	es->dirty = 0;
-	es->files = (NET_FILE**) mem_calloc(size, sizeof(NET_FILE*));
+	es->files = (NET_FILE_**) mem_calloc(size, sizeof(NET_FILE_*));
 	es->size  = size;
 	es->ready = net_array_create(100);
 	es->count = 0;

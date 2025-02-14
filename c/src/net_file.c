@@ -3,7 +3,7 @@
 
 #include "event.h"
 
-void net_file_init(NET_FILE *fe, socket_t fd)
+static void net_file_init(NET_FILE_ *fe, socket_t fd)
 {
 	net_ring_init(&fe->me);
 	fe->fd     = fd;
@@ -30,9 +30,9 @@ void net_file_init(NET_FILE *fe, socket_t fd)
 
 NET_FILE *net_file_alloc(socket_t fd)
 {
-	NET_FILE *fe = (NET_FILE *) mem_calloc(1, sizeof(NET_FILE));
+	NET_FILE_ *fe = (NET_FILE_ *) mem_calloc(1, sizeof(NET_FILE_));
 	net_file_init(fe, fd);
-	return fe;
+	return (NET_FILE*) fe;
 }
 
 socket_t net_file_fd(NET_FILE *fe)
@@ -42,12 +42,12 @@ socket_t net_file_fd(NET_FILE *fe)
 
 void net_file_free(NET_FILE *fe)
 {
-	mem_free(fe);
+	mem_free((NET_FILE_*) fe);
 }
 
 void net_file_set_ctx(NET_FILE *fe, void *ctx)
 {
-	fe->ctx = ctx;
+	((NET_FILE*) fe)->ctx = ctx;
 }
 
 void *net_file_get_ctx(NET_FILE *fe)

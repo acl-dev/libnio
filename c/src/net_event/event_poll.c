@@ -7,7 +7,7 @@
 
 typedef struct EVENT_POLL {
 	NET_EVENT  event;
-	NET_FILE **files;
+	NET_FILE_ **files;
 	int    size;
 	int    count;
 	struct pollfd *pfds;
@@ -24,7 +24,7 @@ static void poll_free(NET_EVENT *ev)
 	mem_free(ep);
 }
 
-static int poll_add_read(EVENT_POLL *ep, NET_FILE *fe)
+static int poll_add_read(EVENT_POLL *ep, NET_FILE_ *fe)
 {
 	struct pollfd *pfd;
 
@@ -50,7 +50,7 @@ static int poll_add_read(EVENT_POLL *ep, NET_FILE *fe)
 	return 0;
 }
 
-static int poll_add_write(EVENT_POLL *ep, NET_FILE *fe)
+static int poll_add_write(EVENT_POLL *ep, NET_FILE_ *fe)
 {
 	struct pollfd *pfd = (fe->id >= 0 && fe->id < ep->count)
 		? &ep->pfds[fe->id] : NULL;
@@ -77,7 +77,7 @@ static int poll_add_write(EVENT_POLL *ep, NET_FILE *fe)
 	return 0;
 }
 
-static int poll_del_read(EVENT_POLL *ep, NET_FILE *fe)
+static int poll_del_read(EVENT_POLL *ep, NET_FILE_ *fe)
 {
 	struct pollfd *pfd;
 
@@ -104,7 +104,7 @@ static int poll_del_read(EVENT_POLL *ep, NET_FILE *fe)
 	return 0;
 }
 
-static int poll_del_write(EVENT_POLL *ep, NET_FILE *fe)
+static int poll_del_write(EVENT_POLL *ep, NET_FILE_ *fe)
 {
 	struct pollfd *pfd;
 
@@ -158,22 +158,22 @@ static int poll_wait(NET_EVENT *ev, int timeout)
 	}
 
 	for (i = 0; i < ep->count; i++) {
-		NET_FILE *fe = ep->files[i];
+		NET_FILE_ *fe = ep->files[i];
 		net_array_append(ep->ready, fe);
 	}
 
 	foreach(iter, ep->ready) {
-		NET_FILE *fe = (NET_FILE *) iter.data;
+		NET_FILE_ *fe = (NET_FILE_ *) iter.data;
 		struct pollfd *pfd = &ep->pfds[fe->id];
 
 #define EVENT_ERR	(POLLERR | POLLHUP | POLLNVAL)
 
 		if (pfd->revents & (POLLIN | EVENT_ERR) && fe->r_proc) {
-			fe->r_proc(ev, fe);
+			fe->r_proc(ev, (NET_FILE*) fe);
 		}
 
 		if (pfd->revents & (POLLOUT | EVENT_ERR ) && fe->w_proc) {
-			fe->w_proc(ev, fe);
+			fe->w_proc(ev, (NET_FILE*) fe);
 		}
 	}
 
@@ -181,7 +181,7 @@ static int poll_wait(NET_EVENT *ev, int timeout)
 	return n;
 }
 
-static int poll_checkfd(NET_EVENT *ev UNUSED, NET_FILE *fe UNUSED)
+static int poll_checkfd(NET_EVENT *ev UNUSED, NET_FILE_ *fe UNUSED)
 {
 	return -1;
 }
@@ -205,7 +205,7 @@ NET_EVENT *net_poll_create(int size)
 	size      = net_open_limit(0);
 	ep->size  = size;
 	ep->pfds  = (struct pollfd *) mem_calloc(size, sizeof(struct pollfd));
-	ep->files = (NET_FILE**) mem_calloc(size, sizeof(NET_FILE*));
+	ep->files = (NET_FILE_**) mem_calloc(size, sizeof(NET_FILE_*));
 	ep->ready = net_array_create(100);
 	ep->count = 0;
 
