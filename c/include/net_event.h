@@ -1,6 +1,8 @@
 #ifndef NET_EVENT_INCLUDE_H
 #define NET_EVENT_INCLUDE_H
 
+#include <stdlib.h>
+
 #ifdef	HAS_EPOLL
 #include <sys/epoll.h>
 #endif
