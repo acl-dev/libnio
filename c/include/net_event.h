@@ -151,7 +151,7 @@ struct NET_EVENT {
 	NET_RING events;
 	int      timeout;
 	int      fdcount;
-	ssize_t  setsize;
+	size_t   setsize;
 	socket_t maxfd;
 
 	unsigned flag;
@@ -183,7 +183,7 @@ void net_file_free(NET_FILE *fe);
 /* net_event.c */
 NET_EVENT *net_event_create(int size, int event_type);
 const char *net_event_name(NET_EVENT *ev);
-ssize_t net_event_size(NET_EVENT *ev);
+size_t net_event_size(NET_EVENT *ev);
 void net_event_free(NET_EVENT *ev);
 void net_event_close(NET_EVENT *ev, NET_FILE *fe);
 

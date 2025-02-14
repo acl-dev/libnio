@@ -31,6 +31,7 @@ NET_EVENT *net_event_create(int size, int net_event_type)
 		net_msg_fatal("%s(%d): not support!", __FUNCTION__, __LINE__);
 #endif
 		break;
+	case NET_EVENT_TYPE_KERNEL:
 	default:
 #if	defined(HAS_EPOLL)
 		ev = net_epoll_create(size);
@@ -47,7 +48,7 @@ NET_EVENT *net_event_create(int size, int net_event_type)
 	assert(ev);
 	net_ring_init(&ev->events);
 	ev->timeout = -1;
-	ev->setsize = size;
+	ev->setsize = (size_t) size;
 	ev->fdcount = 0;
 	ev->maxfd   = -1;
 	ev->waiter  = 0;
@@ -60,7 +61,7 @@ const char *net_event_name(NET_EVENT *ev)
 	return ev->name();
 }
 
-ssize_t net_event_size(NET_EVENT *ev)
+size_t net_event_size(NET_EVENT *ev)
 {
 	return ev->setsize;
 }
