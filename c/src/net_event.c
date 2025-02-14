@@ -291,5 +291,6 @@ void net_event_debug(int on)
 {
 	net_msg_stdout(on);
 	printf("NET_FILE's size: %zd bytes\r\n", sizeof(NET_FILE));
+	printf("NET_FILE_'s size: %zd bytes\r\n", sizeof(NET_FILE_));
 	printf("NET_RING's size: %zd bytes\r\n", sizeof(NET_RING));
 }
