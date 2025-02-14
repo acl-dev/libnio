@@ -1,4 +1,4 @@
-.PHONEY: all clean
+.PHONEY: all clean install
 
 all:
 	@(mkdir -p build)
@@ -6,3 +6,6 @@ all:
 
 clean:
 	@(rm -rf build)
+
+install:
+	@(cd build; make install)

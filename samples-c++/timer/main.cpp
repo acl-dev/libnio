@@ -3,8 +3,8 @@
 #include <getopt.h>
 #include <time.h>
 
-#include "net_event.hpp"
-#include "event_timer.hpp"
+#include "net_event/net_event.hpp"
+#include "net_event/event_timer.hpp"
 
 class mytimer : public ev::event_timer {
 public:
