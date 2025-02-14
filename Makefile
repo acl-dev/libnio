@@ -14,6 +14,7 @@ rebuild rb: cl all
 
 install:
 	@(cd c; make install)
+	@(cd cpp; make install)
 
 uninstall:
 	@(cd c; make uninstall)
