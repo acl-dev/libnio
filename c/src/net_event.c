@@ -7,7 +7,7 @@
 #include "net_event/event_poll.h"
 #include "net_event/event_wmsg.h"
 #include "net_event/event_iocp.h"
-#include "net_event.h"
+#include "event.h"
 
 NET_EVENT *net_event_create(int size, int net_event_type)
 {
@@ -290,4 +290,6 @@ int net_event_wait(NET_EVENT *ev, int timeout)
 void net_event_debug(int on)
 {
 	net_msg_stdout(on);
+	printf("NET_FILE's size: %zd bytes\r\n", sizeof(NET_FILE));
+	printf("NET_RING's size: %zd bytes\r\n", sizeof(NET_RING));
 }

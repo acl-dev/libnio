@@ -67,9 +67,9 @@ static socket_t connect_server(const char *ip, int port) {
 }
 
 static void close_connection(NET_EVENT *ev, NET_FILE *fe) {
-	io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
+	io_ctx_t *ctx = (io_ctx_t*) net_file_get_ctx(fe);
 	net_event_close(ev, fe);
-	close(fe->fd);
+	close(net_file_fd(fe));
 	net_file_free(fe);
 
 	if (++ctx->gctx->finished >= ctx->gctx->cocurrent) {
@@ -82,16 +82,16 @@ static void close_connection(NET_EVENT *ev, NET_FILE *fe) {
 }
 
 static void read_callback(NET_EVENT *ev, NET_FILE *fe) {
-	io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
+	io_ctx_t *ctx = (io_ctx_t*) net_file_get_ctx(fe);
 	char buf[1024];
-	int ret = read(fe->fd, buf, sizeof(buf) - 1);
+	int ret = read(net_file_fd(fe), buf, sizeof(buf) - 1);
 	if (ret <= 0) {
 		close_connection(ev, fe);
 	} else if (++ctx->gctx->count >= ctx->gctx->max_loop) {
 		printf("All over, stop now, count=%d, max=%d!\r\n",
 			ctx->gctx->count, ctx->gctx->max_loop);
 		ctx->gctx->stop = 1;
-	} else if (write(fe->fd, buf, ret) <= 0) {
+	} else if (write(net_file_fd(fe), buf, ret) <= 0) {
 		close_connection(ev, fe);
 	} else if (ctx->gctx->count <= 10) {
 		buf[ret] = 0;
@@ -103,10 +103,10 @@ static void connect_callback(NET_EVENT *ev, NET_FILE *fe) {
 	net_event_del_write(ev, fe);
 
 	const char *s = "hello world!\r\n";
-	if (write(fe->fd, s, strlen(s)) == -1) {
+	if (write(net_file_fd(fe), s, strlen(s)) == -1) {
 		close_connection(ev, fe);
 	} else if (!net_event_add_read(ev, fe, read_callback)) {
-		printf("Add event read error, fd=%d\r\n", fe->fd);
+		printf("Add event read error, fd=%d\r\n", net_file_fd(fe));
 		close_connection(ev, fe);
 	}
 }
@@ -122,7 +122,7 @@ static void usage(const char *procname) {
 }
 
 int main(int argc, char *argv[]) {
-	int ch, port = 8088, event_type = NET_EVENT_TYPE_KERNEL;
+	int ch, port = 8288, event_type = NET_EVENT_TYPE_KERNEL;
 	int cocurrent = 10, max_loop = 100, file_max = 102400;
 	char addr[64], event_type_s[64];
 
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 		NET_FILE *fe = net_file_alloc(fd);
 		io_ctx_t *ctx = calloc(1, sizeof(io_ctx_t));
 		ctx->gctx = gctx;
-		fe->ctx   = ctx;
+		net_file_set_ctx(fe, ctx);
 		if (!net_event_add_write(ev, fe, connect_callback)) {
 			printf("Add one fd=%d error\r\n", fd);
 			close(fd);

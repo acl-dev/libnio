@@ -1,7 +1,7 @@
 #ifndef EVENT_POLL_INCLUDE_H
 #define EVENT_POLL_INCLUDE_H
 
-#include "net_event.h"
+#include "event.h"
 
 #ifdef HAS_POLL
 

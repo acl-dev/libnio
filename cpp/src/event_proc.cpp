@@ -11,7 +11,7 @@ namespace ev {
 event_proc::event_proc(net_event* ev, int fd) {
 	ev_ = ev;
 	fe_ = net_file_alloc(fd);
-	fe_->ctx = this;
+	net_file_set_ctx(fe_,this);
 }
 
 event_proc::~event_proc() {
@@ -19,7 +19,7 @@ event_proc::~event_proc() {
 }
 
 void event_proc::read_proc(NET_EVENT *ev, NET_FILE *fe) {
-	auto* me = (event_proc*) fe->ctx;
+	auto* me = (event_proc*) net_file_get_ctx(fe);
 	assert(me);
 	if (!me->read()) {
 		me->disable_read();
@@ -27,7 +27,7 @@ void event_proc::read_proc(NET_EVENT *ev, NET_FILE *fe) {
 }
 
 void event_proc::write_proc(NET_EVENT *ev, NET_FILE *fe) {
-	auto* me = (event_proc*) fe->ctx;
+	auto* me = (event_proc*) net_file_get_ctx(fe);
 	assert(me);
 	if (!me->write()) {
 		me->disable_write();

@@ -77,8 +77,8 @@ typedef int ssize_t;
 typedef long ssize_t;
 #  endif
 # endif
-typedef SOCKET socket_t;
-typedef int socklen_t;
+//typedef SOCKET socket_t;
+//typedef int socklen_t;
 
 # define	EVENT_ETIMEDOUT		WSAETIMEDOUT
 # define	EVENT_ENOMEM		WSAENOBUFS
@@ -101,7 +101,7 @@ typedef int socklen_t;
 #else
 
 # define INVALID_SOCKET	-1
-typedef int socket_t;
+//typedef int socket_t;
 
 # define	EVENT_ETIMEDOUT		ETIMEDOUT
 # define	EVENT_ENOMEM		ENOMEM
@@ -110,7 +110,7 @@ typedef int socket_t;
 # define	EVENT_ECONNRESET	ECONNRESET
 # define	EVENT_EHOSTDOWN		EHOSTDOWN
 # define	EVENT_EHOSTUNREACH	EHOSTUNREACH
-# define	EVENT_EINTR		EINTR
+# define	EVENT_EINTR			EINTR
 # define	EVENT_EAGAIN		EAGAIN
 # define	EVENT_ENETDOWN		ENETDOWN
 # define	EVENT_ENETUNREACH	ENETUNREACH
@@ -163,11 +163,6 @@ typedef intptr_t net_handle_t;
 #else
 #define	DEPRECATED_FOR(f)	DEPRECATED
 #endif	/* __GNUC__ */
-
-#define NET_EVENT_TYPE_KERNEL      0       /* epoll/kqueue/iocp    */
-#define NET_EVENT_TYPE_POLL        1       /* poll                 */
-#define NET_EVENT_TYPE_SELECT      2       /* select               */
-#define NET_EVENT_TYPE_WMSG        3       /* win message          */
 
 #ifdef	__cplusplus
 }

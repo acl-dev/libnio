@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "common.h"
 
-#include "net_event.h"
+#include "event.h"
 
 void net_file_init(NET_FILE *fe, socket_t fd)
 {
@@ -35,7 +35,22 @@ NET_FILE *net_file_alloc(socket_t fd)
 	return fe;
 }
 
+socket_t net_file_fd(NET_FILE *fe)
+{
+	return fe->fd;
+}
+
 void net_file_free(NET_FILE *fe)
 {
 	mem_free(fe);
+}
+
+void net_file_set_ctx(NET_FILE *fe, void *ctx)
+{
+	fe->ctx = ctx;
+}
+
+void *net_file_get_ctx(NET_FILE *fe)
+{
+	return fe->ctx;
 }

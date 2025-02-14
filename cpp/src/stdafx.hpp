@@ -6,5 +6,4 @@
 
 #include <cassert>
 #include <sys/time.h>
-#include "../../c/include/net_define.h"
 #include "../../c/include/net_event.h"

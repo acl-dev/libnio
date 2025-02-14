@@ -5,6 +5,17 @@
 extern "C" {
 #endif
 
+#ifndef USE_SOCKET_T
+#define USE_SOCKET_T
+
+# if defined(_WIN32) || defined (_WIN64)
+typedef SOCKET socket_t;
+typedef int socklen_t;
+# else
+typedef int socket_t;
+# endif
+#endif
+
 /**
  * 设定当前进程可以打开最大文件描述符值
  * @param limit {int} 设定的最大值
