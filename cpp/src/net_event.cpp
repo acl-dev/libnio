@@ -8,8 +8,23 @@
 
 namespace ev {
 
-net_event::net_event(int size) {
-	ev_ = net_event_create(size, NET_EVENT_TYPE_POLL);
+net_event::net_event(int size, net_event_t type) {
+	int et = NET_EVENT_TYPE_KERNEL;
+	switch (type) {
+	case NET_EVENT_T_POLL:
+		et = NET_EVENT_TYPE_POLL;
+		break;
+	case NET_EVENT_T_SELECT:
+		et = NET_EVENT_TYPE_SELECT;
+		break;
+	case NET_EVENT_T_WMSG:
+		et = NET_EVENT_TYPE_WMSG;
+		break;
+	case NET_EVENT_T_KERNEL:
+	default:
+		break;
+	}
+	ev_ = net_event_create(size, et);
 	set_stamp();
 }
 

@@ -9,11 +9,18 @@ struct NET_EVENT;
 
 namespace ev {
 
+typedef enum {
+	NET_EVENT_T_POLL,
+	NET_EVENT_T_SELECT,
+	NET_EVENT_T_KERNEL,
+	NET_EVENT_T_WMSG,
+} net_event_t;
+
 class event_timer;
 
 class net_event {
 public:
-	explicit net_event(int max_size);
+	explicit net_event(int max_size, net_event_t type = NET_EVENT_T_KERNEL);
 
 	~net_event();
 
