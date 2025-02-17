@@ -6,21 +6,26 @@
 
 namespace ev {
 
+class net_event;
+
 class event_timer {
 public:
-	explicit event_timer(long long ms);
+	event_timer() = default;
 	virtual ~event_timer() = default;
 
 	virtual void on_timer() = 0;
 
-public:
-	void set(long long ms);
-	long long get_ms() const {
-		return ms_;
+	long long get_expire() const {
+		return stamp_;
 	}
 
+public:
+	friend class net_event;
+
+	void set_expire(long long when);
+
 private:
-	long long ms_;
+	long long stamp_ = 0;
 };
 
 } // namespace

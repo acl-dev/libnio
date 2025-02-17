@@ -4,6 +4,7 @@
 
 #pragma once
 #include <map>
+#include <list>
 
 struct NET_EVENT;
 
@@ -17,6 +18,7 @@ typedef enum {
 } net_event_t;
 
 class event_timer;
+class event_proc;
 
 class net_event {
 public:
@@ -26,9 +28,11 @@ public:
 
 	void wait(int ms);
 
-	void add_timer(event_timer *tm);
-
+	void add_timer(event_timer *tm, long long ms);
 	void del_timer(event_timer *tm);
+	void reset_timer(event_timer *tm, long long ms);
+
+	void delay_destroy(event_proc *proc);
 
 public:
 	NET_EVENT *get_event() const {
@@ -37,16 +41,15 @@ public:
 
 private:
 	NET_EVENT *ev_;
+	std::list<event_proc*> procs_free_;
 	long long stamp_ = 0;
+	unsigned counter_ = 0;
 	std::multimap<long long, event_timer *> timers_;
 
 	void set_stamp();
-
-	long long get_stamp() const {
-		return stamp_;
-	}
-
 	void trigger_timers();
+
+	static void before_wait(void *ctx);
 };
 
 } // namespace

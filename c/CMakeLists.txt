@@ -8,6 +8,7 @@ endif()
 
 add_definitions(
 	"-W"
+	"-O3"
 	"-fPIC"
 	"-Wall"
 	"-Werror"
@@ -59,7 +60,7 @@ set(src ${CMAKE_CURRENT_SOURCE_DIR}/src
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/src
-	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_SOURCE_DIR}/include/net_event
 )
 
 foreach(iter ${src})
@@ -75,6 +76,12 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
 
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${lib_output_path})
 	link_directories(${lib_output_path})
+
+	install(TARGETS net_event_static
+			ARCHIVE DESTINATION /usr/local/lib)
+	install(DIRECTORY include/net_event
+			DESTINATION /usr/local/include
+			FILES_MATCHING PATTERN "*.h")
 endif()
 
 ##############################################################################

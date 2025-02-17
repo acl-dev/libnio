@@ -7,10 +7,8 @@
 
 namespace ev {
 
-event_timer::event_timer(long long ms) : ms_(ms) {}
-
-void event_timer::set(long long int ms) {
-	ms_ = ms;
+void event_timer::set_expire(long long int when) {
+	stamp_ = when;
 }
 
 } // namespace

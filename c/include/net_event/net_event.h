@@ -57,6 +57,7 @@ int  net_event_add_write(NET_EVENT *ev, NET_FILE *fe, net_event_proc *proc);
 void net_event_del_read(NET_EVENT *ev, NET_FILE *fe);
 void net_event_del_write(NET_EVENT *ev, NET_FILE *fe);
 int  net_event_wait(NET_EVENT *ev, int left);
+int  net_event_wait2(NET_EVENT *ev, int left, void (*before_wait)(void *), void *ctx);
 
 void net_event_debug(int on);
 

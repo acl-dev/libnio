@@ -9,8 +9,7 @@
 class mytimer : public ev::event_timer {
 public:
 	mytimer(ev::net_event& ev, int id, int cnt)
-	: event_timer(1000 * id)
-	, ev_(ev)
+	: ev_(ev)
 	, id_(id)
 	, cnt_(cnt)
 	{
@@ -25,7 +24,7 @@ protected:
 		if (loop_ >= cnt_) {
 			delete this;
 		} else {
-			ev_.add_timer(this);
+			ev_.add_timer(this, 1000);
 		}
 	}
 
@@ -64,7 +63,7 @@ int main(int argc, char *argv[]) {
 
 	for (int i = 1; i <= 10; i++) {
 		auto* timer = new mytimer(ev, i, cnt);
-		ev.add_timer(timer);
+		ev.add_timer(timer, 1000);
 	}
 
 	while (true) {

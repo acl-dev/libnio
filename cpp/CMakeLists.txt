@@ -8,6 +8,7 @@ endif()
 
 add_definitions(
 	"-W"
+	"-O3"
 	"-fPIC"
 	"-Wall"
 	"-Werror"

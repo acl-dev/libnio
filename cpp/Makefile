@@ -6,6 +6,7 @@ all:
 
 clean:
 	@(rm -rf build)
+	@(rm -rf lib)
 
 install:
 	@(cd build; make install)

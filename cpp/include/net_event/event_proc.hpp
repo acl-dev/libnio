@@ -12,7 +12,7 @@ class net_event;
 
 class event_proc {
 public:
-	explicit event_proc(net_event* ev, int fd);
+	explicit event_proc(net_event &ev, int fd);
 	virtual  ~event_proc();
 
 	bool read_await();
@@ -20,11 +20,17 @@ public:
 	void disable_read();
 	void disable_write();
 
-	virtual bool read() = 0;
-	virtual bool write() = 0;
+	virtual bool read() { return false; }
+	virtual bool write() { return false; }
+	virtual void destroy() {}
+
+public:
+	net_event &get_event() const {
+		return ev_;
+	}
 
 private:
-	net_event* ev_;
+	net_event& ev_;
 	NET_FILE*  fe_;
 
 	static void read_proc(NET_EVENT *ev, NET_FILE *fe);

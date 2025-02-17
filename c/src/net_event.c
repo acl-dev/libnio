@@ -259,7 +259,7 @@ static void net_event_prepare(NET_EVENT *ev)
 	net_ring_init(&ev->events);
 }
 
-int net_event_wait(NET_EVENT *ev, int timeout)
+int net_event_wait2(NET_EVENT *ev, int timeout, void (*before_wait)(void *), void *ctx)
 {
 	int ret;
 
@@ -281,11 +281,20 @@ int net_event_wait(NET_EVENT *ev, int timeout)
 	}
 
 	net_event_prepare(ev);
+
+	if (before_wait) {
+		before_wait(ctx);
+	}
+
 	ret = ev->event_wait(ev, timeout);
 
 	return ret;
 }
 
+int net_event_wait(NET_EVENT *ev, int timeout)
+{
+	return net_event_wait2(ev, timeout, NULL, NULL);
+}
 
 void net_event_debug(int on)
 {
