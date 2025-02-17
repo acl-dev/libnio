@@ -38,7 +38,11 @@ protected:
 			return false;
 		}
 
+#if 0
 		if (::write(fd_, buf, (size_t) ret) != ret) {
+#else
+		if (this->send(buf, (size_t) ret) == -1) {
+#endif
 			this->get_event().del_timer(this);
 			this->get_event().delay_destroy(this);
 			return false;

@@ -29,10 +29,15 @@ public:
 		return ev_;
 	}
 
-private:
-	net_event& ev_;
-	NET_FILE*  fe_;
+protected:
+	ssize_t send(const void *data, size_t len);
 
+private:
+	net_event&   ev_;
+	NET_FILE*    fe_;
+	std::string* buf_ = nullptr;
+
+	ssize_t flush();
 	static void read_proc(NET_EVENT *ev, NET_FILE *fe);
 	static void write_proc(NET_EVENT *ev, NET_FILE *fe);
 };
