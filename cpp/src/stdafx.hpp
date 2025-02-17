@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
-#include "../../c/include/net_event.h"
+#include "../../c/include/net_event/net_event.h"
 
 typedef union {
 	struct sockaddr_storage ss;

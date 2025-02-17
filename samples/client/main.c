@@ -11,8 +11,8 @@
 #include <sys/time.h>
 #include <signal.h>
 
-#include "net_event.h"
-#include "net_iostuff.h"
+#include "net_event/net_event.h"
+#include "net_event/net_iostuff.h"
 
 typedef struct {
 	int max_loop;

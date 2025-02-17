@@ -51,6 +51,8 @@ protected:
 	// @override from event_timer
 	void on_timer() override {
 		printf("Read timeout from fd: %d\r\n", fd_);
+		const char *s = "Timeout, bye!\r\n";
+		::write(fd_, s, strlen(s));
 		this->disable_read();
 		this->get_event().delay_destroy(this);
 	}
