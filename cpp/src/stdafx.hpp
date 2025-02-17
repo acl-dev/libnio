@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <sys/time.h>
+#include <string.h>
 #include <vector>
 #include <string>
 #include <sstream>

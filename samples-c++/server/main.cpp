@@ -4,6 +4,8 @@
 #include <getopt.h>
 #include <cstdio>
 #include <cstdlib>
+#include <unistd.h>
+#include <string.h>
 #include <string>
 
 #include "net_event/net_event.hpp"
@@ -19,7 +21,9 @@ public:
 	: event_proc(ev, fd), fd_(fd)
 	, timeout_(timeout)
 	{
-		this->get_event().add_timer(this, timeout);
+		if (timeout > 0) {
+			this->get_event().add_timer(this, timeout);
+		}
 	}
 
 	~client_proc() override {
@@ -33,7 +37,9 @@ protected:
 		char buf[4096];
 		ssize_t ret = ::read(fd_, buf, sizeof(buf));
 		if (ret <= 0) {
-			this->get_event().del_timer(this);
+			if (timeout_ > 0) {
+				this->get_event().del_timer(this);
+			}
 			this->get_event().delay_destroy(this);
 			return false;
 		}
@@ -43,12 +49,16 @@ protected:
 #else
 		if (this->send(buf, (size_t) ret) == -1) {
 #endif
-			this->get_event().del_timer(this);
+			if (timeout_ > 0) {
+				this->get_event().del_timer(this);
+			}
 			this->get_event().delay_destroy(this);
 			return false;
 		}
 
-		this->get_event().reset_timer(this, timeout_);
+		if (timeout_ > 0) {
+			this->get_event().reset_timer(this, timeout_);
+		}
 		return true;
 	}
 
@@ -117,6 +127,7 @@ int main(int argc, char *argv[]) {
 	while ((ch = getopt(argc, argv, "hl:p:t:")) > 0) {
 		switch (ch) {
 			case 'h':
+				usage(argv[0]);
 				return 0;
 			case 'l':
 				ip = optarg;
