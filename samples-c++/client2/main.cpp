@@ -41,17 +41,8 @@ static bool connect_server(net_event &ev, const char *ip, int port, int timeout)
 	}).on_read([cli, timeout](socket_t fd, bool expired) {
 		char buf[1024];
 		ssize_t ret = ::read(fd, buf, sizeof(buf));
-		if (ret <= 0) {
-			cli->close();
-			return;
-		}
-
-		if (++count >= total_count) {
-			cli->close();
-			return;
-		}
-
-		if (cli->write(buf, ret, timeout) == -1) {
+		if (ret <= 0 || ++count >= total_count
+			 || cli->write(buf, ret, timeout) == -1) {
 			cli->close();
 		}
 	}).on_write([cli](socket_t fd, bool expired) {

@@ -55,6 +55,8 @@ private:
 	static void read_callback(NET_EVENT *ev, NET_FILE *fe);
 	static void write_callback(NET_EVENT *ev, NET_FILE *fe);
 
+	ssize_t flush();
+
 private:
 	client_timer *read_timer_  = nullptr;
 	client_timer *write_timer_ = nullptr;

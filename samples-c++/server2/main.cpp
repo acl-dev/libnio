@@ -26,7 +26,12 @@ static void handle_client(client_socket *cli, int timeout) {
 
 		char buf[1204];
 		ssize_t ret = ::read(fd, buf, sizeof(buf));
-		if (ret <= 0 || cli->write( buf, ret, timeout) == -1) {
+		if (ret <= 0 || cli->write(buf, ret, timeout) == -1) {
+			cli->close();
+		}
+	}).on_write([cli](socket_t fd, bool expired) {
+		if (expired) {
+			printf("Write expired for fd %d\r\n", fd);
 			cli->close();
 		}
 	}).on_error([cli](socket_t fd) {

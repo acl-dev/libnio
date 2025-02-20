@@ -121,7 +121,7 @@ void client_socket::read_callback(NET_EVENT *, NET_FILE *fe) {
 
 bool client_socket::write_await(int ms /* -1 */) {
 	assert(fe_);
-	if (!net_event_add_write(ev_.get_event(), fe_, read_callback)) {
+	if (!net_event_add_write(ev_.get_event(), fe_, write_callback)) {
 		return false;
 	}
 	if (ms <= 0) {
@@ -145,9 +145,48 @@ void client_socket::write_callback(NET_EVENT *, NET_FILE *fe) {
 		cli->ev_.del_timer(cli->write_timer_);
 		cli->write_timer_->set_waiting(false);
 	}
+
+	if (cli->buf_ && !cli->buf_->empty()) {
+		ssize_t ret = cli->flush();
+		if (ret == -1) {
+			if (cli->on_error_) {
+				cli->on_error_(cli->fe_->fd);
+			}
+			return;
+		}
+		if (ret == 0 || cli->buf_->empty()) {
+			return;
+		}
+	}
+
 	if (cli->on_write_) {
 		cli->on_write_(fe->fd, false);
 	}
+}
+
+ssize_t client_socket::flush() {
+	if (!buf_ || buf_->empty()) {
+		return 0;
+	}
+
+	ssize_t ret = ::write(fe_->fd, buf_->c_str(), buf_->size());
+	if (ret == (ssize_t) buf_->size()) {
+		buf_->clear();
+		return ret;
+	}
+
+	if (ret == -1) {
+#if EAGAIN == EWOULDBLOCK
+		if (errno != EAGAIN) {
+#else
+		if (errno != EAGAIN && errno != EWOULDBLOCK) {
+#endif
+			return -1;
+		}
+		return 0;
+	}
+	*buf_ = buf_->substr(ret, buf_->size());
+	return ret;
 }
 
 void client_socket::on_timer(client_timer *timer) {
