@@ -5,7 +5,7 @@
 #include "stdafx.hpp"
 #include "event_timer.hpp"
 
-namespace ev {
+namespace nev {
 
 void event_timer::set_expire(long long int when) {
 	stamp_ = when;

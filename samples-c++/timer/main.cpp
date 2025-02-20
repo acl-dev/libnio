@@ -1,14 +1,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <getopt.h>
-#include <time.h>
+#include <ctime>
 
 #include "net_event/net_event.hpp"
 #include "net_event/event_timer.hpp"
 
-class mytimer : public ev::event_timer {
+class mytimer : public nev::event_timer {
 public:
-	mytimer(ev::net_event& ev, int id, int cnt)
+	mytimer(nev::net_event& ev, int id, int cnt)
 	: ev_(ev)
 	, id_(id)
 	, cnt_(cnt)
@@ -31,7 +31,7 @@ protected:
 private:
 	~mytimer() override = default;
 
-	ev::net_event& ev_;
+	nev::net_event& ev_;
 	int id_;
 	int cnt_;
 	int loop_ = 0;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 			usage(argv[0]);
 			return 0;
 		case 'n':
-			cnt = atoi(optarg);
+			cnt = std::atoi(optarg);
 			break;
 		default:
 			usage(argv[0]);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	ev::net_event ev(10240);
+	nev::net_event ev(10240);
 
 	for (int i = 1; i <= 10; i++) {
 		auto* timer = new mytimer(ev, i, cnt);

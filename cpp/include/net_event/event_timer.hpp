@@ -4,7 +4,7 @@
 
 #pragma once
 
-namespace ev {
+namespace nev {
 
 class net_event;
 
@@ -19,7 +19,7 @@ public:
 		return stamp_;
 	}
 
-public:
+private:
 	friend class net_event;
 
 	void set_expire(long long when);

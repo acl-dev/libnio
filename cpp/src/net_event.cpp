@@ -6,8 +6,9 @@
 #include "event_timer.hpp"
 #include "event_proc.hpp"
 #include "net_event.hpp"
+#include "../../c/include/net_event/net_iostuff.h"
 
-namespace ev {
+namespace nev {
 
 net_event::net_event(int size, net_event_t type) {
 	int et = NET_EVENT_TYPE_KERNEL;
@@ -50,13 +51,24 @@ void net_event::del_timer(event_timer *tm) {
 	}
 }
 
-void net_event::reset_timer(ev::event_timer *tm, long long ms) {
+void net_event::reset_timer(event_timer *tm, long long ms) {
 	del_timer(tm);
 	add_timer(tm, ms);
 }
 
-void net_event::delay_destroy(ev::event_proc *proc) {
-	procs_free_.push_back(proc);
+void net_event::delay_close(event_proc *proc) {
+	if (!proc->is_closing()) {
+		procs_free_.push_back(proc);
+	}
+}
+
+void net_event::before_wait(void *ctx) {
+	auto *me = (net_event *) ctx;
+
+	for (auto proc : me->procs_free_) {
+		proc->on_close();
+	}
+	me->procs_free_.clear();
 }
 
 void net_event::wait(int ms) {
@@ -90,20 +102,23 @@ void net_event::trigger_timers() {
 	}
 }
 
-void net_event::before_wait(void *ctx) {
-	auto *me = (net_event *) ctx;
-
-	for (auto proc : me->procs_free_) {
-		proc->destroy();
-	}
-	me->procs_free_.clear();
-}
-
 void net_event::set_stamp() {
 	struct timeval tm;
 	gettimeofday(&tm, nullptr);
 
 	stamp_ = tm.tv_sec * 1000000 + tm.tv_usec;
+}
+
+void net_event::set_nblock(int fd, bool yes) {
+	net_non_blocking(fd, yes ? 1 : 0);
+}
+
+void net_event::set_ndelay(int fd, bool yes) {
+	net_tcp_nodelay(fd, yes ? 1 : 0);
+}
+
+void net_event::debug(bool on) {
+	net_event_debug(on ? 1 : 0);
 }
 
 } // namespace

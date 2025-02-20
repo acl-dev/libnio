@@ -5,7 +5,7 @@
 #include "stdafx.hpp"
 #include "server_socket.hpp"
 
-namespace ev {
+namespace nev {
 
 server_socket::server_socket(int backlog) : backlog_(backlog) {}
 

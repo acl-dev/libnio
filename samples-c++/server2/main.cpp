@@ -11,76 +11,30 @@
 
 #include "net_event/net_event.hpp"
 #include "net_event/event_proc.hpp"
-#include "net_event/event_timer.hpp"
+#include "net_event/client_socket.hpp"
 #include "net_event/server_socket.hpp"
 
 using namespace nev;
 
-class client_proc : public event_proc, public event_timer {
-public:
-	client_proc(net_event &ev, int fd, int timeout)
-	: event_proc(ev, fd), fd_(fd)
-	, timeout_(timeout)
-	{
-		if (timeout > 0) {
-			this->get_event().add_timer(this, timeout);
-		}
-	}
-
-	~client_proc() override {
-		printf("Close fd %d\r\n", fd_);
-		::close(fd_);
-	}
-
-protected:
-	// @override from event_proc
-	void on_read() override {
-		char buf[4096];
-		ssize_t ret = ::read(fd_, buf, sizeof(buf));
-		if (ret <= 0) {
-			this->close();
+static void handle_client(client_socket *cli, int timeout) {
+	(*cli).on_read([cli, timeout](socket_t fd, bool expired) {
+		if (expired) {
+			printf("Read timeout for fd %d\r\n", fd);
+			cli->close();
 			return;
 		}
 
-#if 0
-		if (::write(fd_, buf, (size_t) ret) != ret) {
-#else
-		if (this->write(buf, (size_t) ret) == -1) {
-#endif
-			this->close();
-			return;
+		char buf[1204];
+		ssize_t ret = ::read(fd, buf, sizeof(buf));
+		if (ret <= 0 || cli->write( buf, ret, timeout) == -1) {
+			cli->close();
 		}
-
-		if (timeout_ > 0) {
-			this->get_event().reset_timer(this, timeout_);
-		}
-	}
-
-	// @override from event_timer
-	void on_timer() override {
-		printf("Read timeout from fd: %d\r\n", fd_);
-		const char *s = "Timeout, bye!\r\n";
-		::write(fd_, s, strlen(s));
-		this->close();
-	}
-
-	// @override from event_proc
-	void on_error() override {
-		this->close();
-	}
-
-	// @override from event_proc
-	void on_close() override {
-		if (timeout_ > 0) {
-			this->get_event().del_timer(this);
-		}
-		delete this;
-	}
-
-private:
-	int fd_;
-	int timeout_;
-};
+	}).on_error([cli](socket_t fd) {
+		cli->close();
+	}).on_close([cli](socket_t fd) {
+		delete cli;
+	}).read_await(timeout);
+}
 
 class server_proc : public event_proc {
 public:
@@ -103,11 +57,9 @@ protected:
 		}
 
 		printf("Accept on client from %s, fd: %d\r\n", addr.c_str(), fd);
-		event_proc *proc = new client_proc(this->get_event(), fd, timeout_);
-		if (!proc->read_await()) {
-			printf("Read await for fd %d error\r\n", fd);
-			delete proc;
-		}
+
+		auto *cli = new client_socket(this->get_event(), fd);
+		handle_client(cli, timeout_);
 	}
 
 private:

@@ -171,7 +171,8 @@ static int kqueue_wait(NET_EVENT *ev, int timeout)
 		if (net_last_error() == EVENT_EINTR) {
 			return 0;
 		}
-		net_msg_fatal("%s: kqueue error %d", __FUNCTION__, net_last_error());
+		net_msg_fatal("%s: kqueue error %d: %s",
+			__FUNCTION__, net_last_error(), strerror(errno));
 	} else if (n == 0) {
 		return 0;
 	}

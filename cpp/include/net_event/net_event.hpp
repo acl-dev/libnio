@@ -8,7 +8,7 @@
 
 struct NET_EVENT;
 
-namespace ev {
+namespace nev {
 
 typedef enum {
 	NET_EVENT_T_POLL,
@@ -32,12 +32,17 @@ public:
 	void del_timer(event_timer *tm);
 	void reset_timer(event_timer *tm, long long ms);
 
-	void delay_destroy(event_proc *proc);
+	void delay_close(event_proc *proc);
 
 public:
 	NET_EVENT *get_event() const {
 		return ev_;
 	}
+
+	static void debug(bool on);
+
+	static void set_nblock(int fd, bool yes);
+	static void set_ndelay(int fd, bool yes);
 
 private:
 	NET_EVENT *ev_;

@@ -118,18 +118,19 @@ static void usage(const char *procname) {
 		" -c cocurrent\r\n"
 		" -n max_loop\r\n"
 		" -m file_max[default: 102400]\r\n"
+		" -d us_delay_when_connect[default: 0]\r\n"
 		, procname);
 }
 
 int main(int argc, char *argv[]) {
 	int ch, port = 8288, event_type = NET_EVENT_TYPE_KERNEL;
-	int cocurrent = 10, max_loop = 100, file_max = 102400;
+	int cocurrent = 10, max_loop = 100, file_max = 102400, delay = 0;
 	char addr[64], event_type_s[64];
 
 	signal(SIGPIPE, SIG_IGN);
 	snprintf(addr, sizeof(addr), "127.0.0.1");
 
-	while ((ch = getopt(argc, argv, "hs:p:t:c:n:m:")) > 0) {
+	while ((ch = getopt(argc, argv, "hs:p:t:c:n:m:d:")) > 0) {
 		switch (ch) {
 		case 'h':
 			usage(argv[0]);
@@ -151,6 +152,9 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'm':
 			file_max = atoi(optarg);
+			break;
+		case 'd':
+			delay = atoi(optarg);
 			break;
 		default:
 			break;
@@ -190,6 +194,10 @@ int main(int argc, char *argv[]) {
 			close(fd);
 			net_file_free(fe);
 			break;
+		}
+
+		if (delay > 0) {
+			usleep(delay);
 		}
 	}
 

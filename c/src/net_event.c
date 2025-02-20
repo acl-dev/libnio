@@ -218,14 +218,15 @@ void net_event_close(NET_EVENT *ev, NET_FILE *fe)
 		ev->del_write(ev, ((NET_FILE_*) fe));
 	}
 
-	/* when one fiber add read/write and del read/write by another fiber
+	/* When one fiber add read/write and del read/write by another fiber
 	 * in one loop, the fe->mask maybe be 0 and the fiber's fe maybe been
-	 * added into events task list
+	 * added into events task list.
 	 */
 	if (((NET_FILE_*) fe)->me.parent != &((NET_FILE_*) fe)->me) {
 		net_ring_detach(&((NET_FILE_*) fe)->me);
 	}
 
+	// Force to delete read/write event monitor for the given fd.
 	if (ev->event_fflush) {
 		ev->event_fflush(ev);
 	}
@@ -273,8 +274,8 @@ int net_event_wait2(NET_EVENT *ev, int timeout, void (*before_wait)(void *), voi
 		timeout = ev->timeout;
 	}
 
-	/* limit the event wait time just for fiber schedule exiting
-	 * quickly when no tasks left
+	/* Limit the event wait time just for fiber schedule exiting
+	 * quickly when no tasks left.
 	 */
 	if (timeout > 1000 || timeout < 0) {
 		timeout = 100;

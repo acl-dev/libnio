@@ -6,7 +6,7 @@
 #include "net_event.hpp"
 #include "event_proc.hpp"
 
-namespace ev {
+namespace nev {
 
 event_proc::event_proc(net_event &ev, int fd) : ev_(ev) {
 	fe_ = net_file_alloc(fd);
@@ -18,32 +18,11 @@ event_proc::~event_proc() {
 	delete buf_;
 }
 
-void event_proc::read_proc(NET_EVENT *, NET_FILE *fe) {
-	auto* me = (event_proc*) net_file_get_ctx(fe);
-	assert(me);
-	if (!me->read()) {
-		me->disable_read();
-	}
-}
-
-void event_proc::write_proc(NET_EVENT *, NET_FILE *fe) {
-	auto* me = (event_proc*) net_file_get_ctx(fe);
-	assert(me);
-
-	if (me->buf_ && !me->buf_->empty()) {
-		ssize_t ret = me->flush();
-		if (ret == -1) {
-			me->write();
-			me->disable_write();
-			return;
-		}
-		if (ret == 0 || !me->buf_->empty()) {
-			return;
-		}
-	}
-
-	if (!me->write()) {
-		me->disable_write();
+void event_proc::close() {
+	if (!closing_) {
+		net_event_close(ev_.get_event(), fe_);
+		ev_.delay_close(this);
+		closing_ = true;
 	}
 }
 
@@ -55,23 +34,32 @@ bool event_proc::write_await() {
 	return net_event_add_write(ev_.get_event(), fe_, write_proc) != 0;
 }
 
-void event_proc::disable_read() {
+void event_proc::read_disable() {
 	net_event_del_read(ev_.get_event(), fe_);
 }
 
-void event_proc::disable_write() {
+void event_proc::write_disable() {
 	net_event_del_write(ev_.get_event(), fe_);
 }
 
-ssize_t event_proc::send(const void *data, size_t len) {
+bool event_proc::connect_await() {
+	return net_event_add_write(ev_.get_event(), fe_, connect_proc) != 0;
+}
+
+ssize_t event_proc::write(const void *data, size_t len) {
+	// If last data hasn't been flush, just append it to the buffer.
 	if (buf_ && !buf_->empty()) {
 		buf_->append((const char*) data, len);
 		return 0;
 	}
+#if 1
 	ssize_t ret = ::write(fe_->fd, data, len);
 	if (ret == (ssize_t) len) {
 		return ret;
 	}
+#else
+	ssize_t ret = 0;
+#endif
 
 	if (ret == -1) {
 #if EAGAIN == EWOULDBLOCK
@@ -117,6 +105,46 @@ ssize_t event_proc::flush() {
 	}
 	*buf_ = buf_->substr(ret, buf_->size());
 	return ret;
+}
+
+void event_proc::read_proc(NET_EVENT *, NET_FILE *fe) {
+	auto* me = (event_proc*) net_file_get_ctx(fe);
+	assert(me);
+	me->on_read();
+}
+
+void event_proc::write_proc(NET_EVENT *, NET_FILE *fe) {
+	auto* me = (event_proc*) net_file_get_ctx(fe);
+	assert(me);
+
+	if (me->buf_ && !me->buf_->empty()) {
+		ssize_t ret = me->flush();
+		if (ret == -1) {
+			me->on_error();
+			return;
+		}
+		if (ret == 0 || !me->buf_->empty()) {
+			return;
+		}
+	}
+
+	me->on_write();
+}
+
+void event_proc::connect_proc(NET_EVENT *, NET_FILE *fe) {
+	auto* me = (event_proc*) net_file_get_ctx(fe);
+	assert(me);
+
+	me->write_disable();
+
+	int err = 0;
+	socklen_t len = sizeof(err);
+	int ret = getsockopt(fe->fd, SOL_SOCKET, SO_ERROR, (char*) &err, &len);
+	if (ret == 0 && (err == 0 || err == EISCONN)) {
+		me->on_connect(true);
+	} else {
+		me->on_connect(false);
+	}
 }
 
 } // namespace
