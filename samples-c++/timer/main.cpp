@@ -3,12 +3,12 @@
 #include <getopt.h>
 #include <ctime>
 
-#include "net_event/net_event.hpp"
-#include "net_event/event_timer.hpp"
+#include "nio/nio_event.hpp"
+#include "nio/event_timer.hpp"
 
-class mytimer : public nev::event_timer {
+class mytimer : public nio::event_timer {
 public:
-    mytimer(nev::net_event& ev, int id, int cnt)
+    mytimer(nio::nio_event& ev, int id, int cnt)
     : ev_(ev), id_(id), cnt_(cnt)
     {
         begin_ = time(nullptr);
@@ -29,7 +29,7 @@ protected:
 private:
     ~mytimer() override = default;
 
-    nev::net_event& ev_;
+    nio::nio_event& ev_;
     int id_;
     int cnt_;
     int loop_ = 0;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    nev::net_event ev(10240);
+    nio::nio_event ev(10240);
 
     for (int i = 1; i <= 10; i++) {
         auto* timer = new mytimer(ev, i, cnt);

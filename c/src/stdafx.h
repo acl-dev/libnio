@@ -1,7 +1,7 @@
 #ifndef __STD_AFX_INCLUDE_H__
 #define __STD_AFX_INCLUDE_H__
 
-#include "net_define.h"
+#include "nio_define.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 # define LIKELY

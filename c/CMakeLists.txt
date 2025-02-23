@@ -54,13 +54,13 @@ endif()
 ##############################################################################
 
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/src
-	${CMAKE_CURRENT_SOURCE_DIR}/src/net_common
-	${CMAKE_CURRENT_SOURCE_DIR}/src/net_event
+	${CMAKE_CURRENT_SOURCE_DIR}/src/common
+	${CMAKE_CURRENT_SOURCE_DIR}/src/events
 )
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/src
-	${CMAKE_CURRENT_SOURCE_DIR}/include/net_event
+	${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 foreach(iter ${src})
@@ -71,15 +71,15 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
 	set(lib_output_path ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 	set(LIBRARY_OUTPUT_PATH ${lib_output_path})
-	add_library(net_event_static STATIC ${lib_src})
-	SET_TARGET_PROPERTIES(net_event_static PROPERTIES OUTPUT_NAME "net_event")
+	add_library(nio_static STATIC ${lib_src})
+	SET_TARGET_PROPERTIES(nio_static PROPERTIES OUTPUT_NAME "nio")
 
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${lib_output_path})
 	link_directories(${lib_output_path})
 
-	install(TARGETS net_event_static
+	install(TARGETS nio_static
 			ARCHIVE DESTINATION /usr/local/lib)
-	install(DIRECTORY include/net_event
+	install(DIRECTORY include/nio
 			DESTINATION /usr/local/include
 			FILES_MATCHING PATTERN "*.h")
 endif()

@@ -69,13 +69,13 @@ add_definitions(
     "-std=c++11"
 )
 
-set(libnet_event ${home_path}/c/lib/libnet_event.a)
-set(libnet_event_cpp ${home_path}/cpp/lib/libnet_event_cpp.a)
+set(libnio ${home_path}/c/lib/libnio.a)
+set(libnio_cpp ${home_path}/cpp/lib/libnio_cpp.a)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    set(lib_all  ${libnet_event_cpp} ${libnet_event} -lpthread -ldl)
+    set(lib_all  ${libnio_cpp} ${libnio} -lpthread -ldl)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    set(lib_all  ${libnet_event_cpp} ${libnet_event} -lpthread -ldl)
+    set(lib_all  ${libnio_cpp} ${libnio} -lpthread -ldl)
 endif()
 
 set(output_path ${CMAKE_CURRENT_SOURCE_DIR})

@@ -3,47 +3,47 @@
 //
 
 #include "stdafx.hpp"
-#include "net_event.hpp"
-#include "event_proc.hpp"
+#include "nio/nio_event.hpp"
+#include "nio/event_proc.hpp"
 
-namespace nev {
+namespace nio {
 
-event_proc::event_proc(net_event &ev, int fd) : ev_(ev) {
-	fe_ = net_file_alloc(fd);
-	net_file_set_ctx(fe_,this);
+event_proc::event_proc(nio_event &ev, int fd) : ev_(ev) {
+	fe_ = nio_file_alloc(fd);
+	nio_file_set_ctx(fe_,this);
 }
 
 event_proc::~event_proc() {
-    net_file_free(fe_);
+    nio_file_free(fe_);
     delete buf_;
 }
 
 void event_proc::close() {
     if (!closing_) {
-        net_event_close(ev_.get_event(), fe_);
+        nio_event_close(ev_.get_event(), fe_);
         ev_.delay_close(this);
         closing_ = true;
     }
 }
 
 bool event_proc::read_await() {
-    return net_event_add_read(ev_.get_event(), fe_, read_proc) != 0;
+    return nio_event_add_read(ev_.get_event(), fe_, read_proc) != 0;
 }
 
 bool event_proc::write_await() {
-    return net_event_add_write(ev_.get_event(), fe_, write_proc) != 0;
+    return nio_event_add_write(ev_.get_event(), fe_, write_proc) != 0;
 }
 
 void event_proc::read_disable() {
-    net_event_del_read(ev_.get_event(), fe_);
+    nio_event_del_read(ev_.get_event(), fe_);
 }
 
 void event_proc::write_disable() {
-    net_event_del_write(ev_.get_event(), fe_);
+    nio_event_del_write(ev_.get_event(), fe_);
 }
 
 bool event_proc::connect_await() {
-    return net_event_add_write(ev_.get_event(), fe_, connect_proc) != 0;
+    return nio_event_add_write(ev_.get_event(), fe_, connect_proc) != 0;
 }
 
 ssize_t event_proc::write(const void *data, size_t len) {
@@ -107,14 +107,14 @@ ssize_t event_proc::flush() {
     return ret;
 }
 
-void event_proc::read_proc(NET_EVENT *, NET_FILE *fe) {
-    auto* me = (event_proc*) net_file_get_ctx(fe);
+void event_proc::read_proc(NIO_EVENT *, NIO_FILE *fe) {
+    auto* me = (event_proc*) nio_file_get_ctx(fe);
     assert(me);
     me->on_read();
 }
 
-void event_proc::write_proc(NET_EVENT *, NET_FILE *fe) {
-    auto* me = (event_proc*) net_file_get_ctx(fe);
+void event_proc::write_proc(NIO_EVENT *, NIO_FILE *fe) {
+    auto* me = (event_proc*) nio_file_get_ctx(fe);
     assert(me);
 
     if (me->buf_ && !me->buf_->empty()) {
@@ -131,8 +131,8 @@ void event_proc::write_proc(NET_EVENT *, NET_FILE *fe) {
     me->on_write();
 }
 
-void event_proc::connect_proc(NET_EVENT *, NET_FILE *fe) {
-    auto* me = (event_proc*) net_file_get_ctx(fe);
+void event_proc::connect_proc(NIO_EVENT *, NIO_FILE *fe) {
+    auto* me = (event_proc*) nio_file_get_ctx(fe);
     assert(me);
 
     me->write_disable();

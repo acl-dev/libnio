@@ -11,16 +11,16 @@
 #include <sys/time.h>
 #include <string>
 
-#include "net_event/net_event.hpp"
-#include "net_event/client_socket.hpp"
+#include "nio/nio_event.hpp"
+#include "nio/client_socket.hpp"
 
-using namespace nev;
+using namespace nio;
 
 static long long total_count = 10000;
 static long long count = 0;
 static int nconns = 0;
 
-static bool connect_server(net_event &ev, const char *ip, int port, int timeout) {
+static bool connect_server(nio_event &ev, const char *ip, int port, int timeout) {
     auto *cli = new client_socket(ev);
 
     (*cli).on_connect([cli, timeout](socket_t fd, bool expired) {
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     int ch, cocurrent = 100;
     std::string ip("127.0.0.1");
     int port = 8288, timeout = 5000;
-    net_event_t etype = NET_EVENT_T_KERNEL;
+    nio_event_t etype = NIO_EVENT_T_KERNEL;
 
     while ((ch = getopt(argc, argv, "he:c:n:l:p:t:")) > 0) {
         switch (ch) {
@@ -94,10 +94,10 @@ int main(int argc, char *argv[]) {
                 break;
             case 'e':
                 if (strcmp(optarg, "poll") == 0) {
-                    etype = NET_EVENT_T_POLL;
+                    etype = NIO_EVENT_T_POLL;
                     printf("Use pool\r\n");
                 } else if (strcmp(optarg, "select") == 0) {
-                    etype = NET_EVENT_T_SELECT;
+                    etype = NIO_EVENT_T_SELECT;
                     printf("Use select\r\n");
                 } else if (strcmp(optarg, "kernel") != 0) {
                     printf("Unknown event: %s\r\n", optarg);
@@ -124,8 +124,8 @@ int main(int argc, char *argv[]) {
 
     signal(SIGPIPE, SIG_IGN);
 
-    net_event::debug(true);
-    net_event ev(102400, etype);
+    nio_event::debug(true);
+    nio_event ev(102400, etype);
 
     for (int i = 0; i < cocurrent; i++) {
         if (!connect_server(ev, ip.c_str(), port, timeout)) {

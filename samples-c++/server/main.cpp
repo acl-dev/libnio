@@ -9,16 +9,16 @@
 #include <cstring>
 #include <string>
 
-#include "net_event/net_event.hpp"
-#include "net_event/event_proc.hpp"
-#include "net_event/event_timer.hpp"
-#include "net_event/server_socket.hpp"
+#include "nio/nio_event.hpp"
+#include "nio/event_proc.hpp"
+#include "nio/event_timer.hpp"
+#include "nio/server_socket.hpp"
 
-using namespace nev;
+using namespace nio;
 
 class client_proc : public event_proc, public event_timer {
 public:
-    client_proc(net_event &ev, int fd, int timeout)
+    client_proc(nio_event &ev, int fd, int timeout)
     : event_proc(ev, fd), fd_(fd) , timeout_(timeout)
     {
         if (timeout > 0) {
@@ -83,7 +83,7 @@ private:
 
 class server_proc : public event_proc {
 public:
-    server_proc(net_event &ev, server_socket &ss, int timeout)
+    server_proc(nio_event &ev, server_socket &ss, int timeout)
         : event_proc(ev, ss.sock_handle()), ss_(ss), timeout_(timeout) {}
 
     ~server_proc() override  = default;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     int ch;
     std::string ip("127.0.0.1");
     int port = 8288, timeout = 5000;
-    net_event_t etype = NET_EVENT_T_KERNEL;
+    nio_event_t etype = NIO_EVENT_T_KERNEL;
 
     while ((ch = getopt(argc, argv, "he:l:p:t:")) > 0) {
         switch (ch) {
@@ -136,10 +136,10 @@ int main(int argc, char *argv[]) {
                 return 0;
             case 'e':
                 if (strcmp(optarg, "poll") == 0) {
-                    etype = NET_EVENT_T_POLL;
+                    etype = NIO_EVENT_T_POLL;
                     printf("Use pool\r\n");
                 } else if (strcmp(optarg, "select") == 0) {
-                    etype = NET_EVENT_T_SELECT;
+                    etype = NIO_EVENT_T_SELECT;
                     printf("Use select\r\n");
                 } else if (strcmp(optarg, "kernel") != 0) {
                     printf("Unknown event: %s\r\n", optarg);
@@ -174,8 +174,8 @@ int main(int argc, char *argv[]) {
 
     printf("Listen on %s:%d ok\r\n", ip.c_str(), port);
 
-    net_event::debug(true);
-    net_event ev(102400, etype);
+    nio_event::debug(true);
+    nio_event ev(102400, etype);
 
     server_proc proc(ev, ss, timeout);
     proc.read_await();

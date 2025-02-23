@@ -3,9 +3,9 @@
 //
 
 #include "stdafx.hpp"
-#include "event_timer.hpp"
+#include "nio/event_timer.hpp"
 
-namespace nev {
+namespace nio {
 
 void event_timer::set_expire(long long int when) {
     stamp_ = when;

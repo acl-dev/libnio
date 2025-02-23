@@ -10,8 +10,8 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
-#include "net_event/net_event.h"
-#include "net_event/net_iostuff.h"
+#include "nio/nio_event.h"
+#include "nio/nio_iostuff.h"
 
 static socket_t listen_addr(const char *ip, int port) {
     struct sockaddr_in sa;
@@ -36,21 +36,21 @@ static socket_t listen_addr(const char *ip, int port) {
     return lfd;
 }
 
-static void read_callback(NET_EVENT *ev, NET_FILE *fe) {
+static void read_callback(NIO_EVENT *ev, NIO_FILE *fe) {
     char buf[1024];
     int ret = read(fe->fd, buf, sizeof(buf));
     if (ret <= 0) {
-        net_event_close(ev, fe);
+        nio_event_close(ev, fe);
         close(fe->fd);
-        net_file_free(fe);
+        nio_file_free(fe);
     } else if (write(fe->fd, buf, ret) <= 0) {
-        net_event_close(ev, fe);
+        nio_event_close(ev, fe);
         close(fe->fd);
-        net_file_free(fe);
+        nio_file_free(fe);
     }
 }
 
-static void listen_callback(NET_EVENT *ev, NET_FILE *fe) {
+static void listen_callback(NIO_EVENT *ev, NIO_FILE *fe) {
     struct sockaddr_in sa;
     socklen_t len = (socklen_t) sizeof(sa);
     memset(&sa, 0, sizeof(sa));
@@ -59,13 +59,13 @@ static void listen_callback(NET_EVENT *ev, NET_FILE *fe) {
         printf("accept error %s\r\n", strerror(errno));
     } else {
         printf("accept one fd %d\r\n", cfd);
-        net_non_blocking(cfd, 1);
-        net_tcp_nodelay(cfd, 1);
-        fe = net_file_alloc(cfd);
-        if (!net_event_add_read(ev, fe, read_callback)) {
+        nio_non_blocking(cfd, 1);
+        nio_tcp_nodelay(cfd, 1);
+        fe = nio_file_alloc(cfd);
+        if (!nio_event_add_read(ev, fe, read_callback)) {
             printf("Add event read error for fd=%d\r\n", fe->fd);
             close(cfd);
-            net_file_free(fe);
+            nio_file_free(fe);
         }
     }
 }
@@ -79,7 +79,7 @@ static void usage(const char *procname) {
 }
 
 int main(int argc, char *argv[]) {
-    int ch, port = 8288, event_type = NET_EVENT_TYPE_KERNEL, file_max = 102400;
+    int ch, port = 8288, event_type = NIO_EVENT_TYPE_KERNEL, file_max = 102400;
     char addr[64], event_type_s[64];
 
     signal(SIGPIPE, SIG_IGN);
@@ -117,29 +117,29 @@ int main(int argc, char *argv[]) {
     printf("listen on %s:%d\r\n", addr, port);
 
     if (strcasecmp(event_type_s, "kernel") == 0) {
-        event_type = NET_EVENT_TYPE_KERNEL;
+        event_type = NIO_EVENT_TYPE_KERNEL;
     } else if (strcasecmp(event_type_s, "poll") == 0) {
-        event_type = NET_EVENT_TYPE_POLL;
+        event_type = NIO_EVENT_TYPE_POLL;
     } else if (strcasecmp(event_type_s, "select") == 0) {
-        event_type = NET_EVENT_TYPE_SELECT;
+        event_type = NIO_EVENT_TYPE_SELECT;
     }
 
-    NET_EVENT *ev = net_event_create(file_max, event_type);
+    NIO_EVENT *ev = nio_event_create(file_max, event_type);
     assert(ev);
 
-    NET_FILE *fe = net_file_alloc(lfd);
+    NIO_FILE *fe = nio_file_alloc(lfd);
 
-    if (!net_event_add_read(ev, fe, listen_callback)) {
+    if (!nio_event_add_read(ev, fe, listen_callback)) {
         printf("Add listen to event error, fd=%d\r\n", fe->fd);
         close(fe->fd);
-        net_file_free(fe);
+        nio_file_free(fe);
         return 1;
     }
 
-    net_event_debug(1);
+    nio_event_debug(1);
 
     while (1) {
-        net_event_wait(ev, 1000);
+        nio_event_wait(ev, 1000);
     }
 
     return 0;

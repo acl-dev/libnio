@@ -11,8 +11,8 @@
 #include <sys/time.h>
 #include <signal.h>
 
-#include "net_event/net_event.h"
-#include "net_event/net_iostuff.h"
+#include "nio/nio_event.h"
+#include "nio/nio_iostuff.h"
 
 typedef struct {
     int max_loop;
@@ -50,8 +50,8 @@ static socket_t connect_server(const char *ip, int port) {
     sa.sin_addr.s_addr = inet_addr(ip);
 
     int fd = socket(PF_INET, SOCK_STREAM, 0);
-    net_non_blocking(fd, 1);
-    net_tcp_nodelay(fd, 0);
+    nio_non_blocking(fd, 1);
+    nio_tcp_nodelay(fd, 0);
 
     int on = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
@@ -66,11 +66,11 @@ static socket_t connect_server(const char *ip, int port) {
     return fd;
 }
 
-static void close_connection(NET_EVENT *ev, NET_FILE *fe) {
+static void close_connection(NIO_EVENT *ev, NIO_FILE *fe) {
     io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
-    net_event_close(ev, fe);
+    nio_event_close(ev, fe);
     close(fe->fd);
-    net_file_free(fe);
+    nio_file_free(fe);
 
     if (++ctx->gctx->finished >= ctx->gctx->cocurrent) {
         ctx->gctx->stop = 1;
@@ -81,7 +81,7 @@ static void close_connection(NET_EVENT *ev, NET_FILE *fe) {
     free(ctx);
 }
 
-static void read_callback(NET_EVENT *ev, NET_FILE *fe) {
+static void read_callback(NIO_EVENT *ev, NIO_FILE *fe) {
     io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
     char buf[1024];
     int ret = read(fe->fd, buf, sizeof(buf) - 1);
@@ -99,13 +99,13 @@ static void read_callback(NET_EVENT *ev, NET_FILE *fe) {
     }
 }
 
-static void connect_callback(NET_EVENT *ev, NET_FILE *fe) {
-    net_event_del_write(ev, fe);
+static void connect_callback(NIO_EVENT *ev, NIO_FILE *fe) {
+    nio_event_del_write(ev, fe);
 
     const char *s = "hello world!\r\n";
     if (write(fe->fd, s, strlen(s)) == -1) {
         close_connection(ev, fe);
-    } else if (!net_event_add_read(ev, fe, read_callback)) {
+    } else if (!nio_event_add_read(ev, fe, read_callback)) {
         printf("Add event read error, fd=%d\r\n", fe->fd);
         close_connection(ev, fe);
     }
@@ -123,7 +123,7 @@ static void usage(const char *procname) {
 }
 
 int main(int argc, char *argv[]) {
-    int ch, port = 8288, event_type = NET_EVENT_TYPE_KERNEL;
+    int ch, port = 8288, event_type = NIO_EVENT_TYPE_KERNEL;
     int cocurrent = 10, max_loop = 100, file_max = 102400, delay = 0;
     char addr[64], event_type_s[64];
 
@@ -162,14 +162,14 @@ int main(int argc, char *argv[]) {
     }
 
     if (strcasecmp(event_type_s, "kernel") == 0) {
-        event_type = NET_EVENT_TYPE_KERNEL;
+        event_type = NIO_EVENT_TYPE_KERNEL;
     } else if (strcasecmp(event_type_s, "poll") == 0) {
-        event_type = NET_EVENT_TYPE_POLL;
+        event_type = NIO_EVENT_TYPE_POLL;
     } else if (strcasecmp(event_type_s, "select") == 0) {
-        event_type = NET_EVENT_TYPE_SELECT;
+        event_type = NIO_EVENT_TYPE_SELECT;
     }
 
-    NET_EVENT *ev = net_event_create(file_max, event_type);
+    NIO_EVENT *ev = nio_event_create(file_max, event_type);
     assert(ev);
 
     gio_ctx_t *gctx = calloc(1, sizeof(gio_ctx_t));
@@ -185,14 +185,14 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        NET_FILE *fe = net_file_alloc(fd);
+        NIO_FILE *fe = nio_file_alloc(fd);
         io_ctx_t *ctx = calloc(1, sizeof(io_ctx_t));
         ctx->gctx = gctx;
         fe->ctx   = ctx;
-        if (!net_event_add_write(ev, fe, connect_callback)) {
+        if (!nio_event_add_write(ev, fe, connect_callback)) {
             printf("Add one fd=%d error\r\n", fd);
             close(fd);
-            net_file_free(fe);
+            nio_file_free(fe);
             break;
         }
 
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
     gettimeofday(&begin, NULL);
 
     while (!gctx->stop) {
-        net_event_wait(ev, 1000);
+        nio_event_wait(ev, 1000);
     }
 
     struct timeval end;

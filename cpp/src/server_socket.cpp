@@ -3,9 +3,9 @@
 //
 
 #include "stdafx.hpp"
-#include "server_socket.hpp"
+#include "nio/server_socket.hpp"
 
-namespace nev {
+namespace nio {
 
 server_socket::server_socket(int backlog) : backlog_(backlog) {}
 

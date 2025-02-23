@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2.0)
-project(net_event)
+project(libnio)
 
 if (${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
 	message(FATAL_ERROR "Please into another dir to build!")

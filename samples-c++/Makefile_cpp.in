@@ -101,7 +101,7 @@ EVENT_CPP_LIB  = $(EVENT_CPP_PATH)/lib
 
 EXTLIBS =
 CFLAGS += -I$(EVENT_CPP_INC)
-LDFLAGS = -L$(EVENT_CPP_LIB) -lnet_event_cpp -L$(EVENT_LIB) -lnet_event $(EXTLIBS) $(SYSLIB)
+LDFLAGS = -L$(EVENT_CPP_LIB) -lnio_cpp -L$(EVENT_LIB) -lnio $(EXTLIBS) $(SYSLIB)
 
 ###########################################################
 

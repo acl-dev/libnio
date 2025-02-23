@@ -3,23 +3,23 @@
 //
 
 #include "stdafx.hpp"
-#include "net_event.hpp"
-#include "event_proc.hpp"
-#include "client_socket.hpp"
+#include "nio/nio_event.hpp"
+#include "nio/event_proc.hpp"
+#include "nio/client_socket.hpp"
 
-namespace nev {
+namespace nio {
 
-client_socket::client_socket(net_event &ev) : ev_(ev) {}
-client_socket::client_socket(net_event &ev, socket_t fd)
+client_socket::client_socket(nio_event &ev) : ev_(ev) {}
+client_socket::client_socket(nio_event &ev, socket_t fd)
 : ev_(ev)
 {
-    fe_ = net_file_alloc(fd);
+    fe_ = nio_file_alloc(fd);
     fe_->ctx = this;
 }
 
 client_socket::~client_socket() {
     if (fe_) {
-        net_file_free(fe_);
+        nio_file_free(fe_);
     }
     delete read_timer_;
     delete write_timer_;
@@ -27,11 +27,11 @@ client_socket::~client_socket() {
 }
 
 void client_socket::read_disable() {
-    net_event_del_read(ev_.get_event(), fe_);
+    nio_event_del_read(ev_.get_event(), fe_);
 }
 
 void client_socket::write_disable() {
-    net_event_del_write(ev_.get_event(), fe_);
+    nio_event_del_write(ev_.get_event(), fe_);
 }
 
 bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
@@ -42,8 +42,8 @@ bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
     sa.sin_addr.s_addr = inet_addr(ip);
 
     int fd = socket(PF_INET, SOCK_STREAM, 0);
-    net_event::set_nblock(fd, true);
-    net_event::set_ndelay(fd, true);
+    nio_event::set_nblock(fd, true);
+    nio_event::set_ndelay(fd, true);
     int on = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
@@ -53,10 +53,10 @@ bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
             return false;
         }
     }
-    NET_FILE *fe = net_file_alloc(fd);
-    if (!net_event_add_write(ev_.get_event(), fe, connect_callback)) {
+    NIO_FILE *fe = nio_file_alloc(fd);
+    if (!nio_event_add_write(ev_.get_event(), fe, connect_callback)) {
         ::close(fd);
-        net_file_free(fe);
+        nio_file_free(fe);
         return false;
     }
     fe->ctx = this;
@@ -74,7 +74,7 @@ bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
     return true;
 }
 
-void client_socket::connect_callback(NET_EVENT *ev, NET_FILE *fe) {
+void client_socket::connect_callback(NIO_EVENT *ev, NIO_FILE *fe) {
     auto *cli = (client_socket*) fe->ctx;
     assert(cli);
 
@@ -88,17 +88,17 @@ void client_socket::connect_callback(NET_EVENT *ev, NET_FILE *fe) {
     socklen_t len = sizeof(err);
     int ret = getsockopt(fe->fd, SOL_SOCKET, SO_ERROR, (char*) &err, &len);
     if (ret == 0 && (err == 0 || err == EISCONN)) {
-        net_event_del_write(ev, fe);
+        nio_event_del_write(ev, fe);
         cli->on_connect_(fe->fd, false);
     } else {
-        net_event_close(ev, fe);
+        nio_event_close(ev, fe);
         cli->on_connect_(-1, false);
     }
 }
 
 bool client_socket::read_await(int ms /* -1 */) {
     assert(fe_);
-    if (!net_event_add_read(ev_.get_event(), fe_, read_callback)) {
+    if (!nio_event_add_read(ev_.get_event(), fe_, read_callback)) {
         return false;
     }
     if (ms <= 0) {
@@ -115,7 +115,7 @@ bool client_socket::read_await(int ms /* -1 */) {
     return true;
 }
 
-void client_socket::read_callback(NET_EVENT *, NET_FILE *fe) {
+void client_socket::read_callback(NIO_EVENT *, NIO_FILE *fe) {
     auto *cli = (client_socket*) fe->ctx;
     assert(cli);
     if (cli->read_timer_ && cli->read_timer_->is_waiting()) {
@@ -129,7 +129,7 @@ void client_socket::read_callback(NET_EVENT *, NET_FILE *fe) {
 
 bool client_socket::write_await(int ms /* -1 */) {
     assert(fe_);
-    if (!net_event_add_write(ev_.get_event(), fe_, write_callback)) {
+    if (!nio_event_add_write(ev_.get_event(), fe_, write_callback)) {
         return false;
     }
     if (ms <= 0) {
@@ -146,7 +146,7 @@ bool client_socket::write_await(int ms /* -1 */) {
     return true;
 }
 
-void client_socket::write_callback(NET_EVENT *, NET_FILE *fe) {
+void client_socket::write_callback(NIO_EVENT *, NIO_FILE *fe) {
     auto *cli = (client_socket*) fe->ctx;
     assert(cli);
     if (cli->write_timer_ && cli->write_timer_->is_waiting()) {
@@ -220,7 +220,7 @@ void client_socket::on_timer(client_timer *timer) {
 
 void client_socket::close() {
     if (fe_ && fe_->fd >= 0) {
-        net_event_close(ev_.get_event(), fe_);
+        nio_event_close(ev_.get_event(), fe_);
         int fd = fe_->fd;
         if (on_close_ != nullptr) {
             on_close_(fe_->fd);
