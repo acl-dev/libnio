@@ -103,7 +103,7 @@ void nio_event::trigger_timers() {
 }
 
 void nio_event::set_stamp() {
-    struct timeval tm;
+    struct timeval tm { 0, 0 };
     gettimeofday(&tm, nullptr);
 
     stamp_ = tm.tv_sec * 1000000 + tm.tv_usec;

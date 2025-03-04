@@ -219,6 +219,13 @@ void client_socket::on_timer(client_timer *timer) {
 }
 
 void client_socket::close() {
+    if (read_timer_ && read_timer_->is_waiting()) {
+        ev_.del_timer(read_timer_);
+    }
+    if (write_timer_ && write_timer_->is_waiting()) {
+        ev_.del_timer(write_timer_);
+    }
+
     if (fe_ && fe_->fd >= 0) {
         nio_event_close(ev_.get_event(), fe_);
         int fd = fe_->fd;
@@ -228,13 +235,6 @@ void client_socket::close() {
         ::close(fd);
     } else {
         on_close_(-1);
-    }
-
-    if (read_timer_ && read_timer_->is_waiting()) {
-        ev_.del_timer(read_timer_);
-    }
-    if (write_timer_ && write_timer_->is_waiting()) {
-        ev_.del_timer(write_timer_);
     }
 }
 
