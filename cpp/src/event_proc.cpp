@@ -18,6 +18,10 @@ event_proc::~event_proc() {
     delete buf_;
 }
 
+void event_proc::set_closing() {
+    closing_ = true;
+}
+
 void event_proc::close_await() {
     if (!closing_) {
         nio_event_close(ev_.get_event(), fe_);

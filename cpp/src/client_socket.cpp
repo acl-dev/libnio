@@ -218,6 +218,10 @@ void client_socket::on_timer(client_timer *timer) {
     }
 }
 
+void client_socket::set_closing() {
+    closing_ = true;
+}
+
 void client_socket::close_await() {
     if (!closing_) {
         if (fe_ && fe_->fd >= 0) {

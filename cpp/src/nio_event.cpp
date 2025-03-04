@@ -59,12 +59,14 @@ void nio_event::reset_timer(event_timer *tm, long long ms) {
 
 void nio_event::delay_close(event_proc *proc) {
     if (!proc->is_closing()) {
+        proc->set_closing();
         procs_free_.push_back(proc);
     }
 }
 
 void nio_event::delay_close(nio::client_socket *client) {
     if (!client->is_closing()) {
+        client->set_closing();
         clients_free_.push_back(client);
     }
 }

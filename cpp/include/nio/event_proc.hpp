@@ -29,6 +29,7 @@ public:
         return ev_;
     }
 
+    void set_closing();
     bool is_closing() const {
         return closing_;
     }

@@ -35,6 +35,7 @@ public:
 
     void close_await();
 
+    void set_closing();
     bool is_closing() const {
         return closing_;
     }
