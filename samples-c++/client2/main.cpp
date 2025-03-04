@@ -26,7 +26,7 @@ static bool connect_server(nio_event &ev, const char *ip, int port, int timeout)
     (*cli).on_connect([cli, timeout](socket_t fd, bool expired) {
         if (fd == -1 || expired) {
             printf("Connect failed, fd=%d, %s\r\n", fd,  expired ? "expired" : "error");
-            cli->close();
+            cli->close_await();
             nconns--;
             return;
         }
@@ -34,7 +34,7 @@ static bool connect_server(nio_event &ev, const char *ip, int port, int timeout)
         printf("Connect ok, fd %d\r\n", fd);
         const char *s = "hello world!\r\n";
         if (cli->write( s, strlen(s), timeout) == -1) {
-            cli->close();
+            cli->close_await();
         } else {
             cli->read_await(timeout);
         }
@@ -43,15 +43,15 @@ static bool connect_server(nio_event &ev, const char *ip, int port, int timeout)
         ssize_t ret = ::read(fd, buf, sizeof(buf));
         if (ret <= 0 || ++count >= total_count
             || cli->write(buf, ret, timeout) == -1) {
-            cli->close();
+            cli->close_await();
         }
     }).on_write([cli](socket_t fd, bool expired) {
         printf("Write wait %s for fd %d\r\n", expired ? "expired" : "error", fd);
         if (expired) {
-            cli->close();
+            cli->close_await();
         }
     }).on_error([cli](socket_t fd) {
-        cli->close();
+        cli->close_await();
     }).on_close([cli](socket_t fd) {
         delete cli;
         nconns--;

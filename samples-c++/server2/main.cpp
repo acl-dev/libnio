@@ -20,23 +20,24 @@ static void handle_client(client_socket *cli, int timeout) {
 	(*cli).on_read([cli, timeout](socket_t fd, bool expired) {
 		if (expired) {
 			printf("Read timeout for fd %d\r\n", fd);
-			cli->close();
+			cli->close_await();
 			return;
 		}
 
 		char buf[1204];
 		ssize_t ret = ::read(fd, buf, sizeof(buf));
 		if (ret <= 0 || cli->write(buf, ret, timeout) == -1) {
-			cli->close();
+			cli->close_await();
 		}
 	}).on_write([cli](socket_t fd, bool expired) {
 		if (expired) {
 			printf("Write expired for fd %d\r\n", fd);
-			cli->close();
+			cli->close_await();
 		}
 	}).on_error([cli](socket_t fd) {
-		cli->close();
+		cli->close_await();
 	}).on_close([cli](socket_t fd) {
+        printf("Closing client fd %d\r\n", fd);
 		delete cli;
 	}).read_await(timeout);
 }

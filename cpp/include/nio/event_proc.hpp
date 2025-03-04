@@ -20,10 +20,10 @@ public:
     void read_disable();
     void write_disable();
     bool connect_await();
+    void close_await();
 
 public:
     ssize_t write(const void *data, size_t len);
-    void close();
 
     nio_event &get_event() const {
         return ev_;
@@ -37,7 +37,7 @@ protected:
     virtual void on_read() {}
     virtual void on_write() {}
     virtual void on_connect(bool ok) {}
-    virtual void on_error() { this->close(); }
+    virtual void on_error() { this->close_await(); }
 
 public:
     virtual void on_close() {}

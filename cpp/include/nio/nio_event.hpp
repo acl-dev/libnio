@@ -19,6 +19,7 @@ typedef enum {
 
 class event_timer;
 class event_proc;
+class client_socket;
 
 class nio_event {
 public:
@@ -33,6 +34,7 @@ public:
     void reset_timer(event_timer *tm, long long ms);
 
     void delay_close(event_proc *proc);
+    void delay_close(client_socket *client);
 
 public:
     NIO_EVENT *get_event() const {
@@ -47,6 +49,7 @@ public:
 private:
     NIO_EVENT *ev_;
     std::list<event_proc*> procs_free_;
+    std::list<client_socket*> clients_free_;
     long long stamp_ = 0;
     unsigned counter_ = 0;
     std::multimap<long long, event_timer *> timers_;

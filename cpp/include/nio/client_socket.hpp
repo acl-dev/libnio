@@ -32,7 +32,12 @@ public:
     bool write_await(int ms = -1);
     void read_disable();
     void write_disable();
-    void close();
+
+    void close_await();
+
+    bool is_closing() const {
+        return closing_;
+    }
 
     client_socket &on_connect(connect_handler_t fn);
     client_socket &on_read(read_handler_t fn);
@@ -44,6 +49,8 @@ public:
     ssize_t write(const void *data, size_t len, int ms = -1);
 
 private:
+    friend class nio_event;
+
     nio_event &ev_;
     connect_handler_t on_connect_;
     read_handler_t    on_read_;
@@ -51,7 +58,9 @@ private:
     error_handler_t   on_error_;
     close_handler_t   on_close_;
 
-    NIO_FILE *fe_       = nullptr;
+    NIO_FILE *fe_  = nullptr;
+    bool closing_  = false;
+    void close();
 
     static void connect_callback(NIO_EVENT *ev, NIO_FILE *fe);
     static void read_callback(NIO_EVENT *ev, NIO_FILE *fe);

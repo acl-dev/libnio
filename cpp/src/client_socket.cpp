@@ -218,22 +218,33 @@ void client_socket::on_timer(client_timer *timer) {
     }
 }
 
+void client_socket::close_await() {
+    if (!closing_) {
+        if (fe_ && fe_->fd >= 0) {
+            nio_event_close(ev_.get_event(), fe_);
+        }
+        ev_.delay_close(this);
+        closing_ = true;
+    }
+}
+
 void client_socket::close() {
     if (read_timer_ && read_timer_->is_waiting()) {
         ev_.del_timer(read_timer_);
+        read_timer_->set_waiting(false);
     }
     if (write_timer_ && write_timer_->is_waiting()) {
         ev_.del_timer(write_timer_);
+        write_timer_->set_waiting(false);
     }
 
     if (fe_ && fe_->fd >= 0) {
-        nio_event_close(ev_.get_event(), fe_);
         int fd = fe_->fd;
         if (on_close_ != nullptr) {
             on_close_(fe_->fd);
         }
         ::close(fd);
-    } else {
+    } else if (on_close_ != nullptr) {
         on_close_(-1);
     }
 }

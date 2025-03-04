@@ -18,7 +18,7 @@ event_proc::~event_proc() {
     delete buf_;
 }
 
-void event_proc::close() {
+void event_proc::close_await() {
     if (!closing_) {
         nio_event_close(ev_.get_event(), fe_);
         ev_.delay_close(this);

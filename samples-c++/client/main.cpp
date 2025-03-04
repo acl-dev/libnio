@@ -48,14 +48,14 @@ protected:
     // @override
     void on_connect(bool ok) override {
         if (!ok) {
-            this->close();
+            this->close_await();
             return;
         }
 
         const char *s = "hello world!\r\n";
         if (this->write(s, strlen(s)) == -1) {
             printf(">>>>>>write error: %s\r\n", strerror(errno));
-            this->close();
+            this->close_await();
         } else {
             this->read_await();
         }
@@ -67,17 +67,17 @@ protected:
         ssize_t ret = ::read(fd_, buf, sizeof(buf));
         if (ret <= 0) {
             printf(">>>read error %s, ret=%ld\r\n", strerror(errno), ret);
-            this->close();
+            this->close_await();
             return;
         }
 
         if (++count >= total_count) {
-            this->close();
+            this->close_await();
             return;
         }
 
         if (this->write(buf, (size_t) ret) == -1) {
-            this->close();
+            this->close_await();
             return;
         }
 
@@ -91,12 +91,12 @@ protected:
         printf("Read timeout from fd: %d\r\n", fd_);
         const char *s = "Timeout, bye!\r\n";
         ::write(fd_, s, strlen(s));
-        this->close();
+        this->close_await();
     }
 
     // @override from event_proc
     void on_error() override {
-        this->close();
+        this->close_await();
     }
 
     // @override from event_proc

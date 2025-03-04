@@ -37,7 +37,7 @@ protected:
         char buf[4096];
         ssize_t ret = ::read(fd_, buf, sizeof(buf));
         if (ret <= 0) {
-            this->close();
+            this->close_await();
             return;
         }
 
@@ -46,7 +46,7 @@ protected:
 #else
         if (this->write(buf, (size_t) ret) == -1) {
 #endif
-            this->close();
+            this->close_await();
             return;
         }
 
@@ -60,12 +60,12 @@ protected:
         printf("Read timeout from fd: %d\r\n", fd_);
         const char *s = "Timeout, bye!\r\n";
         ::write(fd_, s, strlen(s));
-        this->close();
+        this->close_await();
     }
 
     // @override from event_proc
     void on_error() override {
-        this->close();
+        this->close_await();
     }
 
     // @override from event_proc

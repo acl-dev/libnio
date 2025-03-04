@@ -5,6 +5,7 @@
 #include "stdafx.hpp"
 #include "nio/event_timer.hpp"
 #include "nio/event_proc.hpp"
+#include "nio/client_socket.hpp"
 #include "nio/nio_event.hpp"
 #include "../../c/include/nio/nio_iostuff.h"
 
@@ -62,6 +63,12 @@ void nio_event::delay_close(event_proc *proc) {
     }
 }
 
+void nio_event::delay_close(nio::client_socket *client) {
+    if (!client->is_closing()) {
+        clients_free_.push_back(client);
+    }
+}
+
 void nio_event::before_wait(void *ctx) {
     auto *me = (nio_event *) ctx;
 
@@ -69,6 +76,11 @@ void nio_event::before_wait(void *ctx) {
         proc->on_close();
     }
     me->procs_free_.clear();
+
+    for (auto client : me->clients_free_) {
+        client->close();
+    }
+    me->clients_free_.clear();
 }
 
 void nio_event::wait(int ms) {
