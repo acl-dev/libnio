@@ -1,5 +1,5 @@
 //
-// Created by shuxin ����zheng on 2025/2/17.
+// Created by shuxin zheng on 2025/2/17.
 //
 #include <getopt.h>
 #include <unistd.h>
@@ -58,6 +58,11 @@ protected:
 
 		auto *cli = new client_socket(*this->get_event(), fd);
 		handle_client(cli, timeout_);
+	}
+
+	// @override
+	void on_close() override {
+		stop_ = true;
 	}
 
 private:

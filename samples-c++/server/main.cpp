@@ -1,5 +1,5 @@
 //
-// Created by shuxin ¡¡¡¡zheng on 2025/2/17.
+// Created by shuxin zheng on 2025/2/17.
 //
 #include <getopt.h>
 #include <unistd.h>

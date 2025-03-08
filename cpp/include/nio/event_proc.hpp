@@ -21,6 +21,12 @@ public:
     virtual ~event_proc();
 
     /**
+     * @brief Bind the socket file descriptor to the event processor.
+     * @param fd The socket file descriptor.
+     */
+    void bind(socket_t fd);
+
+    /**
      * @brief Read data from the socket in async mode, when the read operation
      *  is successful, the on_read() virtual function will be called.
      * @return Return true if the read operation is successful.
@@ -118,9 +124,6 @@ protected:
      * @brief The virtual function to be called when the socket has an error.
      */
     virtual void on_error() { this->close_await(); }
-
-protected:
-    void bind(socket_t fd);
 
 public:
     /**
