@@ -1,5 +1,5 @@
 //
-// Created by shuxin ¡¡¡¡zheng on 2025/2/14.
+// Created by shuxin zheng on 2025/2/14.
 //
 
 #include "stdafx.hpp"
@@ -8,14 +8,31 @@
 
 namespace nio {
 
-event_proc::event_proc(nio_event &ev, int fd) : ev_(ev) {
+event_proc::event_proc(nio_event &ev, socket_t fd) : ev_(&ev) {
 	fe_ = nio_file_alloc(fd);
-	nio_file_set_ctx(fe_,this);
+	nio_file_set_ctx(fe_, this);
+}
+
+event_proc::event_proc(nio_event *ev) : ev_(ev) {
 }
 
 event_proc::~event_proc() {
-    nio_file_free(fe_);
+    if (fe_) {
+        nio_file_free(fe_);
+    }
     delete buf_;
+}
+
+void event_proc::bind(socket_t fd) {
+    if (fe_) {
+        nio_file_free(fe_);
+    }
+    fe_ = nio_file_alloc(fd);
+    nio_file_set_ctx(fe_, this);
+}
+
+socket_t event_proc::sock_handle() const {
+    return fe_ ? fe_->fd : invalid_socket;
 }
 
 void event_proc::set_closing() {
@@ -23,31 +40,55 @@ void event_proc::set_closing() {
 }
 
 void event_proc::close_await() {
+    if (ev_ == nullptr) {
+        return;
+    }
+
     if (!closing_) {
-        nio_event_close(ev_.get_event(), fe_);
-        ev_.delay_close(this);
+        nio_event_close(ev_->get_event(), fe_);
+        ev_->delay_close(this);
         closing_ = true;
     }
 }
 
 bool event_proc::read_await() {
-    return nio_event_add_read(ev_.get_event(), fe_, read_proc) != 0;
+    if (ev_ == nullptr) {
+        return false;
+    }
+
+    return nio_event_add_read(ev_->get_event(), fe_, read_proc) != 0;
 }
 
 bool event_proc::write_await() {
-    return nio_event_add_write(ev_.get_event(), fe_, write_proc) != 0;
+    if (ev_ == nullptr) {
+        return false;
+    }
+
+    return nio_event_add_write(ev_->get_event(), fe_, write_proc) != 0;
 }
 
 void event_proc::read_disable() {
-    nio_event_del_read(ev_.get_event(), fe_);
+    if (ev_ == nullptr) {
+        return;
+    }
+
+    nio_event_del_read(ev_->get_event(), fe_);
 }
 
 void event_proc::write_disable() {
-    nio_event_del_write(ev_.get_event(), fe_);
+    if (ev_ == nullptr) {
+        return;
+    }
+
+    nio_event_del_write(ev_->get_event(), fe_);
 }
 
 bool event_proc::connect_await() {
-    return nio_event_add_write(ev_.get_event(), fe_, connect_proc) != 0;
+    if (ev_ == nullptr) {
+        return true;
+    }
+
+    return nio_event_add_write(ev_->get_event(), fe_, connect_proc) != 0;
 }
 
 ssize_t event_proc::write(const void *data, size_t len) {

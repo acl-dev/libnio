@@ -1,5 +1,5 @@
 //
-// Created by shuxin ¡¡¡¡zheng on 2025/2/19.
+// Created by shuxin zheng on 2025/2/19.
 //
 
 #include "stdafx.hpp"
@@ -24,6 +24,10 @@ client_socket::~client_socket() {
     delete read_timer_;
     delete write_timer_;
     delete buf_;
+}
+
+socket_t client_socket::sock_handle() const {
+    return fe_ ? fe_->fd : invalid_socket;
 }
 
 void client_socket::read_disable() {

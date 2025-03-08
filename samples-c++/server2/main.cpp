@@ -1,5 +1,5 @@
 //
-// Created by shuxin ¡¡¡¡zheng on 2025/2/17.
+// Created by shuxin ï¿½ï¿½ï¿½ï¿½zheng on 2025/2/17.
 //
 #include <getopt.h>
 #include <unistd.h>
@@ -42,10 +42,10 @@ static void handle_client(client_socket *cli, int timeout) {
 	}).read_await(timeout);
 }
 
-class server_proc : public event_proc {
+class server_proc : public server_socket {
 public:
-	server_proc(nio_event &ev, server_socket &ss, int timeout)
-	: event_proc(ev, ss.sock_handle()), ss_(ss), timeout_(timeout) {}
+	server_proc(nio_event &ev, int timeout)
+	: server_socket(ev), timeout_(timeout) {}
 
 	~server_proc() override  = default;
 
@@ -53,24 +53,15 @@ public:
 
 protected:
 	// @override
-	void on_read() override {
-		std::string addr;
-		int fd = ss_.accept(&addr);
-		if (fd == -1) {
-			printf("Accept error %s\r\n", strerror(errno));
-			stop_ = true;
-			return;
-		}
-
+	void on_accept(socket_t fd, const std::string &addr) override {
 		printf("Accept on client from %s, fd: %d\r\n", addr.c_str(), fd);
 
-		auto *cli = new client_socket(this->get_event(), fd);
+		auto *cli = new client_socket(*this->get_event(), fd);
 		handle_client(cli, timeout_);
 	}
 
 private:
 	bool stop_ = false;
-	server_socket &ss_;
 	int timeout_;
 };
 
@@ -125,21 +116,19 @@ int main(int argc, char *argv[]) {
 
 	signal(SIGPIPE, SIG_IGN);
 
-	server_socket ss(1024);
-	if (!ss.open(ip.c_str(), port)) {
-		printf("Listen on %s:%d error\r\n", ip.c_str(), port);
-		return 1;
-	}
-
-	printf("Listen on %s:%d ok\r\n", ip.c_str(), port);
-
 	nio_event::debug(true);
 	nio_event ev(102400, etype);
 
-	server_proc proc(ev, ss, timeout);
-	proc.read_await();
+	server_proc server(ev, timeout);
+	if (!server.open(ip.c_str(), port)) {
+		printf("Listen on %s:%d error\r\n", ip.c_str(), port);
+		return 1;
+	}
+	printf("Listen on %s:%d ok\r\n", ip.c_str(), port);
 
-	while (!proc.stopped()) {
+	server.accept_await();
+
+	while (!server.stopped()) {
 		ev.wait(1000);
 	}
 

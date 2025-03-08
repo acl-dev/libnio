@@ -1,5 +1,5 @@
 //
-// Created by shuxin ¡¡¡¡zheng on 2025/2/17.
+// Created by shuxin zheng on 2025/2/17.
 //
 
 #include "stdafx.hpp"
@@ -7,7 +7,17 @@
 
 namespace nio {
 
-server_socket::server_socket(int backlog) : backlog_(backlog) {}
+server_socket::server_socket(int backlog)
+: event_proc(nullptr)
+, backlog_(backlog)
+{
+}
+
+server_socket::server_socket(nio_event &ev, int backlog)
+: event_proc(&ev)
+, backlog_(backlog)
+{
+}
 
 server_socket::~server_socket() {
     if (lfd_ >= 0) {
@@ -31,26 +41,26 @@ bool server_socket::open(const char *ip, int port) {
     int on = 1;
     setsockopt(lfd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-    if (bind(lfd_, (const struct sockaddr*) &sa, sizeof(sa)) < 0) {
-        close(lfd_);
+    if (::bind(lfd_, (const struct sockaddr*) &sa, sizeof(sa)) < 0) {
+        ::close(lfd_);
         lfd_ = -1;
         return false;
     }
-    if (listen(lfd_, backlog_) < 0) {
+    if (::listen(lfd_, backlog_) < 0) {
         lfd_ = -1;
-        close(lfd_);
+        ::close(lfd_);
         return false;
     }
     return true;
 }
 
-int server_socket::accept(std::string *addr) const {
+socket_t server_socket::accept(std::string *addr) const {
     SOCK_ADDR saddr;
     memset(&saddr, 0, sizeof(saddr));
 
     auto *sa = (struct sockaddr *) &saddr;
     auto len = (socklen_t) sizeof(saddr);
-    int fd = ::accept(lfd_, sa, &len);
+    socket_t fd = ::accept(lfd_, sa, &len);
     if (fd == -1) {
         return -1;
     }
@@ -62,7 +72,7 @@ int server_socket::accept(std::string *addr) const {
     if (sa->sa_family == PF_INET) {
         char ip[32];
         if (!inet_ntop(sa->sa_family, &saddr.in.sin_addr, ip, sizeof(ip))) {
-            close(fd);
+            ::close(fd);
             return -1;
         }
         int port = ntohs(saddr.in.sin_port);
@@ -72,7 +82,7 @@ int server_socket::accept(std::string *addr) const {
     } else if (sa->sa_family == PF_INET6) {
         char ip[64];
         if (!inet_ntop(sa->sa_family, &saddr.in6.sin6_addr, ip, sizeof(ip))) {
-            close(fd);
+            ::close(fd);
             return -1;
         }
         char ifname[IF_NAMESIZE];
@@ -100,4 +110,26 @@ int server_socket::accept(std::string *addr) const {
     return fd;
 }
 
-} // namespace ev
+void server_socket::accept_await() {
+    if (lfd_ < 0) {
+        return;
+    }
+
+    this->bind(lfd_);
+    this->read_await();
+}
+
+void server_socket::on_read() {
+    std::string addr;
+    int fd = this->accept(&addr);
+    if (fd == -1) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            this->on_error();
+        }
+        return;
+    }
+
+    this->on_accept(fd, addr);
+}
+
+} // namespace nio

@@ -22,7 +22,7 @@ public:
     : event_proc(ev, fd), fd_(fd) , timeout_(timeout)
     {
         if (timeout > 0) {
-            this->get_event().add_timer(this, timeout);
+            this->get_event()->add_timer(this, timeout);
         }
     }
 
@@ -51,7 +51,7 @@ protected:
         }
 
         if (timeout_ > 0) {
-            this->get_event().reset_timer(this, timeout_);
+            this->get_event()->reset_timer(this, timeout_);
         }
     }
 
@@ -71,7 +71,7 @@ protected:
     // @override from event_proc
     void on_close() override {
         if (timeout_ > 0) {
-            this->get_event().del_timer(this);
+            this->get_event()->del_timer(this);
         }
         delete this;
     }
@@ -102,7 +102,7 @@ protected:
         }
 
         printf("Accept on client from %s, fd: %d\r\n", addr.c_str(), fd);
-        event_proc *proc = new client_proc(this->get_event(), fd, timeout_);
+        event_proc *proc = new client_proc(*this->get_event(), fd, timeout_);
         if (!proc->read_await()) {
             printf("Read await for fd %d error\r\n", fd);
             delete proc;
