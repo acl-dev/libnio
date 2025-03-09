@@ -110,26 +110,46 @@ socket_t server_socket::accept(std::string *addr) const {
     return fd;
 }
 
-void server_socket::accept_await() {
+bool server_socket::accept_await() {
     if (lfd_ < 0) {
-        return;
+        return false;
     }
 
     this->bind(lfd_);
-    this->read_await();
+    return this->read_await();
+}
+
+server_socket &server_socket::set_on_accept(accept_handler_t fn) {
+    on_accept_ = std::move(fn);
+    return *this;
+}
+
+server_socket &server_socket::set_on_error(accept_error_handler_t fn) {
+    on_error_ = std::move(fn);
+    return *this;
+}
+
+server_socket &server_socket::set_on_close(server_close_handler_t fn) {
+    on_close_ = std::move(fn);
+    return *this;
 }
 
 void server_socket::on_read() {
     std::string addr;
     int fd = this->accept(&addr);
     if (fd == -1) {
-        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            this->on_error();
+        if (errno != EAGAIN && errno != EWOULDBLOCK && on_error_) {
+            on_error_();
         }
-        return;
+    } else if (on_accept_) {
+        on_accept_(fd, addr);
     }
+}
 
-    this->on_accept(fd, addr);
+void server_socket::on_close() {
+    if (on_close_) {
+        on_close_();
+    }
 }
 
 } // namespace nio

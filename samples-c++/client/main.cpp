@@ -161,42 +161,42 @@ int main(int argc, char *argv[]) {
 
     while ((ch = getopt(argc, argv, "he:c:n:l:p:t:")) > 0) {
         switch (ch) {
-            case 'h':
-                usage(argv[0]);
-                return 0;
-            case 'c':
-                cocurrent = std::atoi(optarg);
-                break;
-            case 'n':
-                total_count = std::atoll(optarg);
-                break;
-            case 'e':
-                if (strcmp(optarg, "poll") == 0) {
-                    etype = NIO_EVENT_T_POLL;
-                    printf("Use pool\r\n");
-                } else if (strcmp(optarg, "select") == 0) {
-                    etype = NIO_EVENT_T_SELECT;
-                    printf("Use select\r\n");
-                } else if (strcmp(optarg, "kernel") != 0) {
-                    printf("Unknown event: %s\r\n", optarg);
-                    usage(argv[0]);
-                    return 1;
-                } else {
-                    printf("Use kernel\r\n");
-                }
-                break;
-            case 's':
-                ip = optarg;
-                break;
-            case 'p':
-                port = std::atoi(optarg);
-                break;
-            case 't':
-                timeout = std::atoi(optarg);
-                break;
-            default:
+        case 'h':
+            usage(argv[0]);
+            return 0;
+        case 'c':
+            cocurrent = std::atoi(optarg);
+            break;
+        case 'n':
+            total_count = std::atoll(optarg);
+            break;
+        case 'e':
+            if (strcmp(optarg, "poll") == 0) {
+                etype = NIO_EVENT_T_POLL;
+                printf("Use pool\r\n");
+            } else if (strcmp(optarg, "select") == 0) {
+                etype = NIO_EVENT_T_SELECT;
+                printf("Use select\r\n");
+            } else if (strcmp(optarg, "kernel") != 0) {
+                printf("Unknown event: %s\r\n", optarg);
                 usage(argv[0]);
                 return 1;
+            } else {
+                printf("Use kernel\r\n");
+            }
+            break;
+        case 's':
+            ip = optarg;
+            break;
+        case 'p':
+            port = std::atoi(optarg);
+            break;
+        case 't':
+            timeout = std::atoi(optarg);
+            break;
+        default:
+            usage(argv[0]);
+            return 1;
         }
     }
 

@@ -54,35 +54,6 @@ static void handle_client(client_socket *cli, int timeout) {
     cli->read_await(timeout);
 }
 
-// The server socket will accept client connections in async mode.
-class server_proc : public server_socket {
-public:
-    server_proc(nio_event &ev, int timeout)
-    : server_socket(ev), timeout_(timeout) {}
-
-    ~server_proc() override  = default;
-
-    bool stopped() const { return stop_; }
-
-protected:
-    // @override
-    void on_accept(socket_t fd, const std::string &addr) override {
-        printf("Accept on client from %s, fd: %d\r\n", addr.c_str(), fd);
-
-        auto *cli = new client_socket(*this->get_event(), fd);
-        handle_client(cli, timeout_);
-    }
-
-    // @override
-    void on_close() override {
-        stop_ = true;
-    }
-
-private:
-    bool stop_ = false;
-    int timeout_;
-};
-
 int main() {
     std::string ip("127.0.0.1");
     int port = 8288, timeout = 5000;
@@ -94,7 +65,7 @@ int main() {
     nio_event::debug(true);
     nio_event ev(102400, etype);
 
-    server_proc server(ev, timeout);
+    server_socket server(ev);
 
     // Bind and listen the specified address.
     if (!server.open(ip.c_str(), port)) {
@@ -104,11 +75,22 @@ int main() {
 
     printf("Listen on %s:%d ok\r\n", ip.c_str(), port);
 
+    // Register callback handlers in server.
+    server.set_on_accept([&ev, timeout](socket_t fd, const std::string &addr) {
+        printf("Accept on client from %s, fd: %d\r\n", addr.c_str(), fd);
+        auto *cli = new client_socket(ev, fd);
+        handle_client(cli, timeout);
+    }).set_on_error([]() {
+        printf("Error on server socket\r\n");
+    }).set_on_close([]() {
+        printf("Server socket closed\r\n");
+    });
+
     // The server socket will accecpt client connections in async mode.
     server.accept_await();
 
     // IO event loop process.
-    while (!server.stopped()) {
+    while (true) {
         ev.wait(1000);
     }
 
