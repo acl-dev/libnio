@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <functional>
 #include <string>
 #include "nio_define.hpp"
 #include "event_proc.hpp"
