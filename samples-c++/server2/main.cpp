@@ -10,7 +10,6 @@
 #include <string>
 
 #include "nio/nio_event.hpp"
-#include "nio/event_proc.hpp"
 #include "nio/client_socket.hpp"
 #include "nio/server_socket.hpp"
 

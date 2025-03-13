@@ -282,6 +282,10 @@ client_socket &client_socket::on_close(close_handler_t fn) {
     return *this;
 }
 
+ssize_t client_socket::read(void *buf, size_t count) {
+    return ::read(fe_->fd, buf, count);
+}
+
 ssize_t client_socket::write(const void *data, size_t len, int ms) {
     if (buf_ && !buf_->empty()) {
         buf_->append((const char*) data, len);

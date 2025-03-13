@@ -141,6 +141,14 @@ public:
 
 public:
     /**
+     * @brief Read data from the socket.
+     * @param buf The buffer to store the data.
+     * @param count The buffer's capacity.
+     * @return ssize_t Return the number of bytes read, or -1 if an error occurs, 0 if socket was closed.
+     */
+    ssize_t read(void *buf, size_t count);
+
+    /**
      * @brief Write data to the socket.
      * @param data The data buffer to write.
      * @param len The data buffer length.
