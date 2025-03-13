@@ -7,7 +7,7 @@ libnio contains C and C++11 code. The C part implements a general IO event libra
 
 ## 2. Examples
 
-Below is server example using libnio:
+Below are server and client examples using libnio:
 
 ### 2.1. Server example
 
