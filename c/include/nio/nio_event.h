@@ -46,7 +46,9 @@ void nio_file_set_ctx(NIO_FILE *fe, void *ctx);
 void *nio_file_get_ctx(NIO_FILE *fe);
 
 /* nio_event.c */
-NIO_EVENT *nio_event_create(int size, int event_type);
+NIO_EVENT *nio_event_create(int size, int event_type, unsigned flags);
+#define EVENT_F_DIRECT      (1 << 1)
+
 const char *nio_event_name(NIO_EVENT *ev);
 size_t nio_event_size(NIO_EVENT *ev);
 void nio_event_free(NIO_EVENT *ev);

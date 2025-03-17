@@ -159,10 +159,18 @@ public:
 
     /**
      * @brief Get the socket file descriptor.
-     * @return socket_t Return the socket file descriptor, or invalid_socket
+     * @return Return the socket file descriptor, or invalid_socket
      *  if an error occurs.
      */
     socket_t sock_handle() const;
+
+    /**
+     * @brief Get the nio_event object.
+     * @return Return the nio_event.
+     */
+    nio_event& get_event() const {
+        return ev_;
+    }
 
 private:
     friend class nio_event;

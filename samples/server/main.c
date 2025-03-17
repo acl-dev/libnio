@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
         event_type = NIO_EVENT_TYPE_SELECT;
     }
 
-    NIO_EVENT *ev = nio_event_create(file_max, event_type);
+    NIO_EVENT *ev = nio_event_create(file_max, event_type, 0);
     assert(ev);
 
     NIO_FILE *fe = nio_file_alloc(lfd);

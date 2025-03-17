@@ -11,7 +11,7 @@
 
 namespace nio {
 
-nio_event::nio_event(int size, nio_event_t type) {
+nio_event::nio_event(int size, nio_event_t type, nio_flag_t flags) {
     int et = NIO_EVENT_TYPE_KERNEL;
     switch (type) {
     case NIO_EVENT_T_POLL:
@@ -27,7 +27,13 @@ nio_event::nio_event(int size, nio_event_t type) {
     default:
         break;
     }
-    ev_ = nio_event_create(size, et);
+
+    unsigned f = 0;
+    if ((flags & NIO_EVENT_F_DIRECT) != 0) {
+        f |= EVENT_F_DIRECT;
+    }
+
+    ev_ = nio_event_create(size, et, f);
     set_stamp();
 }
 
