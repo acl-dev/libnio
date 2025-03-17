@@ -20,10 +20,10 @@ typedef enum {
     NIO_EVENT_T_WMSG,
 } nio_event_t;
 
-typedef enum {
+enum {
     NIO_EVENT_F_NONE   = (0),
     NIO_EVENT_F_DIRECT = (1 << 1),
-} nio_flag_t;
+};
 
 class event_timer;
 class event_proc;
@@ -35,7 +35,7 @@ class client_socket;
 class nio_event {
 public:
     explicit nio_event(int max_size, nio_event_t type = NIO_EVENT_T_KERNEL,
-        nio_flag_t flags = NIO_EVENT_F_NONE);
+        unsigned flags = NIO_EVENT_F_NONE);
 
     ~nio_event();
 

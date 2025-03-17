@@ -11,7 +11,7 @@
 
 namespace nio {
 
-nio_event::nio_event(int size, nio_event_t type, nio_flag_t flags) {
+nio_event::nio_event(int size, nio_event_t type, unsigned flags) {
     int et = NIO_EVENT_TYPE_KERNEL;
     switch (type) {
     case NIO_EVENT_T_POLL:
