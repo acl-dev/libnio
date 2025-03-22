@@ -139,6 +139,20 @@ public:
      */
     client_socket &on_close(close_handler_t fn);
 
+    /**
+     * @brief Set the context in the client socket.
+     * @return client_socket&
+     */
+    client_socket &set_ctx(void *ctx);
+
+    /**
+     * @brief Get the context in client socket set in set_ctx().
+     * @return void*
+     */
+    void *get_ctx() const {
+        return ctx_;
+    }
+
 public:
     /**
      * @brief Read data from the socket.
@@ -182,6 +196,7 @@ private:
     error_handler_t   on_error_;
     close_handler_t   on_close_;
 
+    void *ctx_     = nullptr;
     NIO_FILE *fe_  = nullptr;
     bool closing_  = false;
     void close();

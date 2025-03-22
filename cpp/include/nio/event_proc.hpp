@@ -118,7 +118,7 @@ protected:
      * @brief The virtual function to be called when the connection is established.
      * @param ok If the connection is successful.
      */
-    virtual void on_connect(bool ok) {}
+    virtual void on_connect(bool ok) { (void) ok; }
 
     /**
      * @brief The virtual function to be called when the socket has an error.

@@ -282,6 +282,11 @@ client_socket &client_socket::on_close(close_handler_t fn) {
     return *this;
 }
 
+client_socket &client_socket::set_ctx(void *ctx) {
+    ctx_ = ctx;
+    return *this;
+}
+
 ssize_t client_socket::read(void *buf, size_t count) {
     return ::read(fe_->fd, buf, count);
 }
