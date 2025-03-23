@@ -28,6 +28,7 @@ static int poll_add_read(EVENT_POLL *ep, NIO_FILE_ *fe) {
     struct pollfd *pfd;
 
     if (fe->id == -1) {
+        printf(">>>count: %d, size: %d\n", (int) ep->count, (int) ep->size);
         assert(ep->count < ep->size);
         fe->id = ep->count++;
     }
@@ -194,7 +195,7 @@ NIO_EVENT *nio_poll_create(int size) {
 
     // override size with system open limit setting
     size      = nio_open_limit(0);
-    ep->size  = size;
+    ep->size  = size > 0 ? size : 1024;
     ep->pfds  = (struct pollfd *) mem_calloc(size, sizeof(struct pollfd));
     ep->files = (NIO_FILE_**) mem_calloc(size, sizeof(NIO_FILE_*));
     ep->ready = nio_array_create(100);
