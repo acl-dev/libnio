@@ -17,14 +17,15 @@ class nio_event;
 class event_proc {
 public:
     explicit event_proc(nio_event &ev, socket_t fd);
-    explicit event_proc(nio_event *ev);
+    explicit event_proc() = default;
     virtual ~event_proc();
 
     /**
      * @brief Bind the socket file descriptor to the event processor.
+     * @param ev The nio event.
      * @param fd The socket file descriptor.
      */
-    void bind(socket_t fd);
+    void bind(nio_event &ev, socket_t fd);
 
     /**
      * @brief Read data from the socket in async mode, when the read operation

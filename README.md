@@ -65,7 +65,7 @@ int main() {
     nio_event::debug(true);
     nio_event ev(102400, etype);
 
-    server_socket server(ev);
+    server_socket server;
 
     // Bind and listen the specified address.
     if (!server.open(ip.c_str(), port)) {
@@ -87,7 +87,7 @@ int main() {
     });
 
     // The server socket will accecpt client connections in async mode.
-    server.accept_await();
+    server.accept_await(ev);
 
     // IO event loop process.
     while (true) {

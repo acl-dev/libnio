@@ -8,14 +8,7 @@
 namespace nio {
 
 server_socket::server_socket(int backlog)
-: event_proc(nullptr)
-, backlog_(backlog)
-{
-}
-
-server_socket::server_socket(nio_event &ev, int backlog)
-: event_proc(&ev)
-, backlog_(backlog)
+: backlog_(backlog)
 {
 }
 
@@ -110,12 +103,12 @@ socket_t server_socket::accept(std::string *addr) const {
     return fd;
 }
 
-bool server_socket::accept_await() {
+bool server_socket::accept_await(nio_event &ev) {
     if (lfd_ < 0) {
         return false;
     }
 
-    this->bind(lfd_);
+    this->bind(ev, lfd_);
     return this->read_await();
 }
 

@@ -25,7 +25,6 @@ using server_close_handler_t = std::function<void()>;
 class server_socket : public event_proc {
 public:
     explicit server_socket(int backlog = 128);
-    explicit server_socket(nio_event &ev, int backlog = 128);
     ~server_socket() override;
 
     /**
@@ -52,9 +51,10 @@ public:
 public:
     /**
      * @brief Accept a client connection in async mode.
+     * @param ev The nio event.
      * @return Return true if the accept operation is successful.
      */
-    bool accept_await();
+    bool accept_await(nio_event &ev);
 
     /**
      * @brief Set the on_accept handler when a client is accepted.

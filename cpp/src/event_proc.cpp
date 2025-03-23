@@ -13,9 +13,6 @@ event_proc::event_proc(nio_event &ev, socket_t fd) : ev_(&ev) {
 	nio_file_set_ctx(fe_, this);
 }
 
-event_proc::event_proc(nio_event *ev) : ev_(ev) {
-}
-
 event_proc::~event_proc() {
     if (fe_) {
         nio_file_free(fe_);
@@ -23,7 +20,9 @@ event_proc::~event_proc() {
     delete buf_;
 }
 
-void event_proc::bind(socket_t fd) {
+void event_proc::bind(nio_event &ev, socket_t fd) {
+    ev_ = &ev;
+
     if (fe_) {
         nio_file_free(fe_);
     }

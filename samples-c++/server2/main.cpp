@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
     nio_event::debug(true);
     nio_event ev(102400, etype);
 
-    server_socket server(ev);
+    server_socket server;
     if (!server.open(ip.c_str(), port)) {
         printf("Listen on %s:%d error\r\n", ip.c_str(), port);
         return 1;
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
         printf("Server socket closed\r\n");
     });
 
-    server.accept_await();
+    server.accept_await(ev);
 
     while (true) {
         ev.wait(1000);
