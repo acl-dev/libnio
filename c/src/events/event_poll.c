@@ -28,7 +28,6 @@ static int poll_add_read(EVENT_POLL *ep, NIO_FILE_ *fe) {
     struct pollfd *pfd;
 
     if (fe->id == -1) {
-        printf(">>>count: %d, size: %d\n", (int) ep->count, (int) ep->size);
         assert(ep->count < ep->size);
         fe->id = ep->count++;
     }
