@@ -194,7 +194,10 @@ NIO_EVENT *nio_poll_create(int size) {
 
     // override size with system open limit setting
     size      = nio_open_limit(0);
-    ep->size  = size > 0 ? size : 1024;
+    if (size <= 0) {
+        size = 1024;
+    }
+    ep->size  = size;
     ep->pfds  = (struct pollfd *) mem_calloc(size, sizeof(struct pollfd));
     ep->files = (NIO_FILE_**) mem_calloc(size, sizeof(NIO_FILE_*));
     ep->ready = nio_array_create(100);

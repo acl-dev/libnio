@@ -199,6 +199,10 @@ NIO_EVENT *nio_select_create(int size) {
 
     // override size with system open limit setting
     size      = nio_open_limit(0);
+    if (size <= 0) {
+        size = 1024;
+    }
+
     es->maxfd = -1;
     es->dirty = 0;
     es->files = (NIO_FILE_**) mem_calloc(size, sizeof(NIO_FILE_*));
