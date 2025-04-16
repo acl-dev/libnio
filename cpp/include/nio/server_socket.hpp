@@ -46,7 +46,7 @@ public:
      * @brief Get the server socket file descriptor.
      * @return Return the server socket file descriptor.
      */
-    socket_t sock_handle() const { return lfd_; }
+    socket_t sock_handle() const override { return lfd_; }
 
 public:
     /**

@@ -102,7 +102,7 @@ public:
      * @return socket_t Return the socket file descriptor, or invalid_socket
      *  if an error occurs.
      */
-    socket_t sock_handle() const;
+    virtual socket_t sock_handle() const;
 
 protected:
     /**
