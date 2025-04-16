@@ -28,7 +28,7 @@ static void nio_file_init(NIO_FILE_ *fe, socket_t fd) {
 }
 
 NIO_FILE *nio_file_alloc(socket_t fd) {
-    NIO_FILE_ *fe = (NIO_FILE_ *) mem_calloc(1, sizeof(NIO_FILE_));
+    NIO_FILE_ *fe = (NIO_FILE_ *) nio_mem_calloc(1, sizeof(NIO_FILE_));
     nio_file_init(fe, fd);
     return (NIO_FILE*) fe;
 }
@@ -38,7 +38,7 @@ socket_t nio_file_fd(NIO_FILE *fe) {
 }
 
 void nio_file_free(NIO_FILE *fe) {
-    mem_free((NIO_FILE_*) fe);
+    nio_mem_free((NIO_FILE_*) fe);
 }
 
 void nio_file_set_ctx(NIO_FILE *fe, void *ctx) {

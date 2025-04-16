@@ -5,7 +5,7 @@
 
 #include <dlfcn.h>
 #include <sys/event.h>
-#include "event_kqueue.h"
+#include "nio_event_kqueue.h"
 
 typedef int (*kqueue_fn)(void);
 typedef int (*kevent_fn)(int, const struct kevent *, int, struct kevent *,
@@ -46,9 +46,9 @@ static void kqueue_free(NIO_EVENT *ev) {
     EVENT_KQUEUE *ek = (EVENT_KQUEUE *) ev;
 
     close(ek->kqfd);
-    mem_free(ek->changes);
-    mem_free(ek->events);
-    mem_free(ek);
+    nio_mem_free(ek->changes);
+    nio_mem_free(ek->events);
+    nio_mem_free(ek);
 }
 
 static int kqueue_fflush(EVENT_KQUEUE *ek) {
@@ -199,7 +199,7 @@ static const char *kqueue_name(void) {
 }
 
 NIO_EVENT *nio_kqueue_create(int size) {
-    EVENT_KQUEUE *ek = (EVENT_KQUEUE *) mem_calloc(1, sizeof(EVENT_KQUEUE));
+    EVENT_KQUEUE *ek = (EVENT_KQUEUE *) nio_mem_calloc(1, sizeof(EVENT_KQUEUE));
 
     if (__sys_kqueue == NULL) {
         hook_init();
@@ -208,12 +208,12 @@ NIO_EVENT *nio_kqueue_create(int size) {
     if (size <= 0 || size > 1024) {
         size = 1024;
     }
-    ek->changes  = (struct kevent *) mem_malloc(sizeof(struct kevent) * size);
+    ek->changes  = (struct kevent *) nio_mem_malloc(sizeof(struct kevent) * size);
     ek->setsize  = size;
     ek->nchanges = 0;
 
     ek->nevents  = 100;
-    ek->events   = (struct kevent *) mem_malloc(sizeof(struct kevent) * ek->nevents);
+    ek->events   = (struct kevent *) nio_mem_malloc(sizeof(struct kevent) * ek->nevents);
 
     ek->kqfd     = __sys_kqueue();
     assert(ek->kqfd >= 0);

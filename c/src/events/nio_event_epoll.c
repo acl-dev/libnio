@@ -7,7 +7,7 @@
 #define __USE_GNU
 #endif
 #include <sys/epoll.h>
-#include "event_epoll.h"
+#include "nio_event_epoll.h"
 
 /****************************************************************************/
 
@@ -22,8 +22,8 @@ static void epoll_free(NIO_EVENT *ev) {
     EVENT_EPOLL *ep = (EVENT_EPOLL *) ev;
 
     close(ep->epfd);
-    mem_free(ep->events);
-    mem_free(ep);
+    nio_mem_free(ep->events);
+    nio_mem_free(ep);
 }
 
 static int epoll_add_read(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
@@ -216,10 +216,10 @@ static const char *epoll_name(void) {
 }
 
 NIO_EVENT *nio_epoll_create(int size) {
-    EVENT_EPOLL *ep = (EVENT_EPOLL *) mem_calloc(1, sizeof(EVENT_EPOLL));
+    EVENT_EPOLL *ep = (EVENT_EPOLL *) nio_mem_calloc(1, sizeof(EVENT_EPOLL));
 
     ep->events = (struct epoll_event *)
-        mem_malloc(sizeof(struct epoll_event) * size);
+        nio_mem_malloc(sizeof(struct epoll_event) * size);
     ep->size   = size;
 
     ep->epfd = epoll_create(1024);

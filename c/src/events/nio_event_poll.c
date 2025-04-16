@@ -4,7 +4,7 @@
 
 #include "nio/nio_iostuff.h"
 #include "common.h"
-#include "event_poll.h"
+#include "nio_event_poll.h"
 
 typedef struct EVENT_POLL {
     NIO_EVENT  event;
@@ -18,10 +18,10 @@ typedef struct EVENT_POLL {
 static void poll_free(NIO_EVENT *ev) {
     EVENT_POLL *ep = (EVENT_POLL *) ev;
 
-    mem_free(ep->files);
-    mem_free(ep->pfds);
+    nio_mem_free(ep->files);
+    nio_mem_free(ep->pfds);
     nio_array_free(ep->ready, NULL);
-    mem_free(ep);
+    nio_mem_free(ep);
 }
 
 static int poll_add_read(EVENT_POLL *ep, NIO_FILE_ *fe) {
@@ -190,7 +190,7 @@ static const char *poll_name(void) {
 }
 
 NIO_EVENT *nio_poll_create(int size) {
-    EVENT_POLL *ep = (EVENT_POLL *) mem_calloc(1, sizeof(EVENT_POLL));
+    EVENT_POLL *ep = (EVENT_POLL *) nio_mem_calloc(1, sizeof(EVENT_POLL));
 
     // override size with system open limit setting
     size      = nio_open_limit(0);
@@ -198,8 +198,8 @@ NIO_EVENT *nio_poll_create(int size) {
         size = 1024;
     }
     ep->size  = size;
-    ep->pfds  = (struct pollfd *) mem_calloc(size, sizeof(struct pollfd));
-    ep->files = (NIO_FILE_**) mem_calloc(size, sizeof(NIO_FILE_*));
+    ep->pfds  = (struct pollfd *) nio_mem_calloc(size, sizeof(struct pollfd));
+    ep->files = (NIO_FILE_**) nio_mem_calloc(size, sizeof(NIO_FILE_*));
     ep->ready = nio_array_create(100);
     ep->count = 0;
 

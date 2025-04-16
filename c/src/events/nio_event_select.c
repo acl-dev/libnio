@@ -4,7 +4,7 @@
 
 #include "nio/nio_iostuff.h"
 #include "common.h"
-#include "event_select.h"
+#include "nio_event_select.h"
 
 typedef struct EVENT_SELECT {
     NIO_EVENT  event;
@@ -21,9 +21,9 @@ typedef struct EVENT_SELECT {
 
 static void select_free(NIO_EVENT *ev) {
     EVENT_SELECT *es = (EVENT_SELECT *) ev;
-    mem_free(es->files);
+    nio_mem_free(es->files);
     nio_array_free(es->ready, NULL);
-    mem_free(es);
+    nio_mem_free(es);
 }
 
 static int select_add_read(EVENT_SELECT *es, NIO_FILE_ *fe) {
@@ -195,7 +195,7 @@ static const char *select_name(void) {
 }
 
 NIO_EVENT *nio_select_create(int size) {
-    EVENT_SELECT *es = (EVENT_SELECT *) mem_calloc(1, sizeof(EVENT_SELECT));
+    EVENT_SELECT *es = (EVENT_SELECT *) nio_mem_calloc(1, sizeof(EVENT_SELECT));
 
     // override size with system open limit setting
     size      = nio_open_limit(0);
@@ -205,7 +205,7 @@ NIO_EVENT *nio_select_create(int size) {
 
     es->maxfd = -1;
     es->dirty = 0;
-    es->files = (NIO_FILE_**) mem_calloc(size, sizeof(NIO_FILE_*));
+    es->files = (NIO_FILE_**) nio_mem_calloc(size, sizeof(NIO_FILE_*));
     es->size  = size;
     es->ready = nio_array_create(100);
     es->count = 0;

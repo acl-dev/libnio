@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "memory.h"
+#include "nio_memory.h"
 #include "nio_msg.h"
 #include "nio_array.h"
 
@@ -126,9 +126,9 @@ static void nio_array_grow(NIO_ARRAY *a, int min_capacity)
 	a->capacity += delta;
 
 	if (a->items == NULL) {
-		a->items = (void**) mem_malloc(a->capacity * sizeof(void*));
+		a->items = (void**) nio_mem_malloc(a->capacity * sizeof(void*));
 	} else {
-		a->items = (void**) mem_realloc(a->items, a->capacity * sizeof(void*));
+		a->items = (void**) nio_mem_realloc(a->items, a->capacity * sizeof(void*));
 	}
 
 	/* reset, just in case */
@@ -140,7 +140,7 @@ NIO_ARRAY *nio_array_create(int init_size)
 {
 	NIO_ARRAY *a;
 
-	a = (NIO_ARRAY *) mem_calloc(1, sizeof(NIO_ARRAY));
+	a = (NIO_ARRAY *) nio_mem_calloc(1, sizeof(NIO_ARRAY));
 
 	a->push_back  = nio_array_push_back;
 	a->push_front = nio_array_push_front;
@@ -177,9 +177,9 @@ void nio_array_free(NIO_ARRAY *a, void (*free_fn)(void *))
 {
 	nio_array_clean(a, free_fn);
 	if (a->items) {
-		mem_free(a->items);
+		nio_mem_free(a->items);
 	}
-	mem_free(a);
+	nio_mem_free(a);
 }
 
 int nio_array_append(NIO_ARRAY *a, void *obj)

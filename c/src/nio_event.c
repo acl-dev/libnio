@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #include "common.h"
 
-#include "events/event_epoll.h"
-#include "events/event_kqueue.h"
-#include "events/event_select.h"
-#include "events/event_poll.h"
-#include "events/event_wmsg.h"
-#include "events/event_iocp.h"
+#include "events/nio_event_epoll.h"
+#include "events/nio_event_kqueue.h"
+#include "events/nio_event_select.h"
+#include "events/nio_event_poll.h"
+#include "events/nio_event_wmsg.h"
+#include "events/nio_event_iocp.h"
 #include "event.h"
 
 NIO_EVENT *nio_event_create(int size, int nio_event_type, unsigned flags) {

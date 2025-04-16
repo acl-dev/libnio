@@ -1,13 +1,13 @@
 #include "stdafx.h"
-#include "memory.h"
+#include "nio_memory.h"
 #include "nio_msg.h"
-#include "htable.h"
+#include "nio_htable.h"
 
-/* htable_iter_head */
+/* nio_htable_iter_head */
 
-static void *htable_iter_head(ITER *iter, HTABLE *table)
+static void *nio_htable_iter_head(ITER *iter, NIO_HTABLE *table)
 {
-	HTABLE_INFO *ptr = NULL;
+	NIO_HTABLE_INFO *ptr = NULL;
 
 	iter->dlen = -1;
 	iter->klen = -1;
@@ -32,13 +32,13 @@ static void *htable_iter_head(ITER *iter, HTABLE *table)
 	return (iter->ptr);
 }
 
-/* htable_iter_next */
+/* nio_htable_iter_next */
 
-static void *htable_iter_next(ITER *iter, HTABLE *table)
+static void *nio_htable_iter_next(ITER *iter, NIO_HTABLE *table)
 {
-	HTABLE_INFO *ptr;
+	NIO_HTABLE_INFO *ptr;
 
-	ptr = (HTABLE_INFO*) iter->ptr;
+	ptr = (NIO_HTABLE_INFO*) iter->ptr;
 	if (ptr) {
 		iter->ptr = ptr = ptr->next;
 		if (ptr != NULL) {
@@ -65,11 +65,11 @@ static void *htable_iter_next(ITER *iter, HTABLE *table)
 	return (iter->ptr);
 }
 
-/* htable_iter_tail */
+/* nio_htable_iter_tail */
 
-static void *htable_iter_tail(ITER *iter, HTABLE *table)
+static void *nio_htable_iter_tail(ITER *iter, NIO_HTABLE *table)
 {
-	HTABLE_INFO *ptr = NULL;
+	NIO_HTABLE_INFO *ptr = NULL;
 
 	iter->dlen = -1;
 	iter->klen = -1;
@@ -94,13 +94,13 @@ static void *htable_iter_tail(ITER *iter, HTABLE *table)
 	return (iter->ptr);
 }
 
-/* htable_iter_prev */
+/* nio_htable_iter_prev */
 
-static void *htable_iter_prev(ITER *iter, HTABLE *table)
+static void *nio_htable_iter_prev(ITER *iter, NIO_HTABLE *table)
 {
-	HTABLE_INFO *ptr;
+	NIO_HTABLE_INFO *ptr;
 
-	ptr = (HTABLE_INFO*) iter->ptr;
+	ptr = (NIO_HTABLE_INFO*) iter->ptr;
 	if (ptr) {
 		iter->ptr = ptr = ptr->next;
 		if (ptr != NULL) {
@@ -127,12 +127,12 @@ static void *htable_iter_prev(ITER *iter, HTABLE *table)
 	return (iter->ptr);
 }
 
-/* htable_iter_info */
+/* nio_htable_iter_info */
 
-static HTABLE_INFO *htable_iter_info(ITER *iter, struct HTABLE *table)
+static NIO_HTABLE_INFO *nio_htable_iter_info(ITER *iter, struct NIO_HTABLE *table)
 {
 	(void) table;
-	return (iter->ptr ? (HTABLE_INFO*) iter->ptr : NULL);
+	return (iter->ptr ? (NIO_HTABLE_INFO*) iter->ptr : NULL);
 }
 
 /* __def_hash_fn - hash a string */
@@ -157,10 +157,10 @@ static unsigned __def_hash_fn(const void *buffer, size_t len)
 
         return (unsigned) h;
 }
-/* htable_link - insert element into table */
+/* nio_htable_link - insert element into table */
 
-#define htable_link(_table, _element, _n) { \
-	HTABLE_INFO **_h = _table->data + _n; \
+#define nio_htable_link(_table, _element, _n) { \
+	NIO_HTABLE_INFO **_h = _table->data + _n; \
 	_element->prev = 0; \
 	if ((_element->next = *_h) != 0) \
 		(*_h)->prev = _element; \
@@ -168,15 +168,15 @@ static unsigned __def_hash_fn(const void *buffer, size_t len)
 	_table->used++; \
 }
 
-/* htable_size - allocate and initialize hash table */
+/* nio_htable_size - allocate and initialize hash table */
 
-static int __htable_size(HTABLE *table, unsigned size)
+static int __nio_htable_size(NIO_HTABLE *table, unsigned size)
 {
-	HTABLE_INFO **h;
+	NIO_HTABLE_INFO **h;
 
 	size |= 1;
 
-	table->data = h = (HTABLE_INFO **) mem_malloc(size * sizeof(HTABLE_INFO *));
+	table->data = h = (NIO_HTABLE_INFO **) nio_mem_malloc(size * sizeof(NIO_HTABLE_INFO *));
 	if(table->data == NULL) {
 		return -1;
 	}
@@ -191,19 +191,19 @@ static int __htable_size(HTABLE *table, unsigned size)
 	return 0;
 }
 
-/* htable_grow - extend existing table */
+/* nio_htable_grow - extend existing table */
 
-static int htable_grow(HTABLE *table)
+static int nio_htable_grow(NIO_HTABLE *table)
 {
 	int ret;
-	HTABLE_INFO *ht;
-	HTABLE_INFO *next;
+	NIO_HTABLE_INFO *ht;
+	NIO_HTABLE_INFO *next;
 	unsigned old_size = table->size;
-	HTABLE_INFO **h0 = table->data;
-	HTABLE_INFO **old_entries = h0;
+	NIO_HTABLE_INFO **h0 = table->data;
+	NIO_HTABLE_INFO **old_entries = h0;
 	unsigned n;
 
-	ret = __htable_size(table, 2 * old_size);
+	ret = __nio_htable_size(table, 2 * old_size);
 	if (ret < 0) {
 		return -1;
 	}
@@ -212,49 +212,49 @@ static int htable_grow(HTABLE *table)
 		for (ht = *h0++; ht; ht = next) {
 			next = ht->next;
 			n = __def_hash_fn(ht->key, strlen(ht->key)) % table->size;
-			htable_link(table, ht, n);
+			nio_htable_link(table, ht, n);
 		}
 	}
 
-	mem_free(old_entries);
+	nio_mem_free(old_entries);
 	return 0;
 }
 
-HTABLE *htable_create(int size)
+NIO_HTABLE *nio_htable_create(int size)
 {
-	HTABLE *table;
+	NIO_HTABLE *table;
 	int	ret;
 
-	table =	(HTABLE *) mem_calloc(1, sizeof(HTABLE));
+	table =	(NIO_HTABLE *) nio_mem_calloc(1, sizeof(NIO_HTABLE));
 	if (table == NULL) {
 		return NULL;
 	}
 
 	table->init_size = size;
-	ret = __htable_size(table, size < 13 ? 13 : size);
+	ret = __nio_htable_size(table, size < 13 ? 13 : size);
 	if(ret < 0) {
-		mem_free(table);
+		nio_mem_free(table);
 		return NULL;
 	}
 
-	table->iter_head = htable_iter_head;
-	table->iter_next = htable_iter_next;
-	table->iter_tail = htable_iter_tail;
-	table->iter_prev = htable_iter_prev;
-	table->iter_info = htable_iter_info;
+	table->iter_head = nio_htable_iter_head;
+	table->iter_next = nio_htable_iter_next;
+	table->iter_tail = nio_htable_iter_tail;
+	table->iter_prev = nio_htable_iter_prev;
+	table->iter_info = nio_htable_iter_info;
 
 	return table;
 }
 
-int htable_errno(HTABLE *table)
+int nio_htable_errno(NIO_HTABLE *table)
 {
 	if (table == NULL) {
-		return HTABLE_STAT_INVAL;
+		return NIO_HTABLE_STAT_INVAL;
 	}
 	return table->status;
 }
 
-void htable_set_errno(HTABLE *table, int error)
+void nio_htable_set_errno(NIO_HTABLE *table, int error)
 {
 	if (table) {
 		table->status = error;
@@ -263,19 +263,19 @@ void htable_set_errno(HTABLE *table, int error)
 
 #define	STREQ(x,y) (x == y || (x[0] == y[0] && strcmp(x,y) == 0))
 
-/* htable_enter - enter (key, value) pair */
+/* nio_htable_enter - enter (key, value) pair */
 
-HTABLE_INFO *htable_enter(HTABLE *table, const char *key, void *value)
+NIO_HTABLE_INFO *nio_htable_enter(NIO_HTABLE *table, const char *key, void *value)
 {
-	HTABLE_INFO *ht;
+	NIO_HTABLE_INFO *ht;
 	int   ret;
 	unsigned hash, n;
 
-	table->status = HTABLE_STAT_OK;
+	table->status = NIO_HTABLE_STAT_OK;
 	hash = __def_hash_fn(key, strlen(key));
 
 	if (table->used >= table->size) {
-		ret = htable_grow(table);
+		ret = nio_htable_grow(table);
 		if(ret < 0) {
 			return NULL;
 		}
@@ -285,14 +285,14 @@ HTABLE_INFO *htable_enter(HTABLE *table, const char *key, void *value)
 
 	for (ht = table->data[n]; ht; ht = ht->next) {
 		if (STREQ(key, ht->key)) {
-			table->status = HTABLE_STAT_DUPLEX_KEY;
+			table->status = NIO_HTABLE_STAT_DUPLEX_KEY;
 			nio_msg_info("%s(%d): duplex key(%s) exist",
 				__FUNCTION__, __LINE__, key);
 			return ht;
 		}
 	}
 
-	ht = (HTABLE_INFO *) mem_malloc(sizeof(HTABLE_INFO));
+	ht = (NIO_HTABLE_INFO *) nio_mem_malloc(sizeof(NIO_HTABLE_INFO));
 	if (ht == NULL) {
 		nio_msg_error("%s(%d): alloc error", __FUNCTION__, __LINE__);
 		return NULL;
@@ -301,34 +301,34 @@ HTABLE_INFO *htable_enter(HTABLE *table, const char *key, void *value)
 #if defined(_WIN32) || defined(_WIN64)
 	ht->key = _strdup(key);
 #else
-	ht->key = mem_strdup(key);
+	ht->key = nio_mem_strdup(key);
 #endif
 	if (ht->key == NULL) {
 		nio_msg_error("%s(%d): alloc error", __FUNCTION__, __LINE__);
-		mem_free(ht);
+		nio_mem_free(ht);
 		return NULL;
 	}
 	ht->hash  = hash;
 	ht->value = value;
-	htable_link(table, ht, n);
+	nio_htable_link(table, ht, n);
 
 	return ht;
 }
 
-/* htable_find - lookup value */
+/* nio_htable_find - lookup value */
 
-void *htable_find(HTABLE *table, const char *key)
+void *nio_htable_find(NIO_HTABLE *table, const char *key)
 {
-	HTABLE_INFO *ht = htable_locate(table, key);
+	NIO_HTABLE_INFO *ht = nio_htable_locate(table, key);
 
 	return ht != NULL ? ht->value : NULL;
 }
 
-/* htable_locate - lookup entry */
+/* nio_htable_locate - lookup entry */
 
-HTABLE_INFO *htable_locate(HTABLE *table, const char *key)
+NIO_HTABLE_INFO *nio_htable_locate(NIO_HTABLE *table, const char *key)
 {
-	HTABLE_INFO *ht;
+	NIO_HTABLE_INFO *ht;
 	unsigned     n;
 
 	n = __def_hash_fn(key, strlen(key));
@@ -343,11 +343,11 @@ HTABLE_INFO *htable_locate(HTABLE *table, const char *key)
 	return NULL;
 }
 
-void htable_delete_entry(HTABLE *table, HTABLE_INFO *ht,
+void nio_htable_delete_entry(NIO_HTABLE *table, NIO_HTABLE_INFO *ht,
 	void (*free_fn) (void *))
 {
 	unsigned n = ht->hash % table->size;
-	HTABLE_INFO **h = table->data + n;
+	NIO_HTABLE_INFO **h = table->data + n;
 
 	if (ht->next)
 		ht->next->prev = ht->prev;
@@ -356,20 +356,20 @@ void htable_delete_entry(HTABLE *table, HTABLE_INFO *ht,
 	else
 		*h = ht->next;
 
-	mem_free(ht->key);
+	nio_mem_free(ht->key);
 	if (free_fn && ht->value)
 		(*free_fn) (ht->value);
-	mem_free(ht);
+	nio_mem_free(ht);
 	table->used--;
 }
 
-/* htable_delete - delete one entry */
+/* nio_htable_delete - delete one entry */
 
-int htable_delete(HTABLE *table, const char *key, void (*free_fn) (void *))
+int nio_htable_delete(NIO_HTABLE *table, const char *key, void (*free_fn) (void *))
 {
-	HTABLE_INFO *ht;
+	NIO_HTABLE_INFO *ht;
 	unsigned     n;
-	HTABLE_INFO **h;
+	NIO_HTABLE_INFO **h;
 
 	n = __def_hash_fn(key, strlen(key));
 	n = n % table->size;
@@ -377,43 +377,43 @@ int htable_delete(HTABLE *table, const char *key, void (*free_fn) (void *))
 	h = table->data + n;
 	for (ht = *h; ht; ht = ht->next) {
 		if (STREQ(key, ht->key)) {
-			htable_delete_entry(table, ht, free_fn);
+			nio_htable_delete_entry(table, ht, free_fn);
 			return 0;
 		}
 	}
 	return -1;
 }
 
-/* htable_free - destroy hash table */
+/* nio_htable_free - destroy hash table */
 
-void htable_free(HTABLE *table, void (*free_fn) (void *))
+void nio_htable_free(NIO_HTABLE *table, void (*free_fn) (void *))
 {
 	unsigned i = table->size;
-	HTABLE_INFO  *ht;
-	HTABLE_INFO  *next;
-	HTABLE_INFO **h = table->data;
+	NIO_HTABLE_INFO  *ht;
+	NIO_HTABLE_INFO  *next;
+	NIO_HTABLE_INFO **h = table->data;
 
 	while (i-- > 0) {
 		for (ht = *h++; ht; ht = next) {
 			next = ht->next;
-			mem_free(ht->key);
+			nio_mem_free(ht->key);
 			if (free_fn && ht->value)
 				(*free_fn) (ht->value);
-			mem_free(ht);
+			nio_mem_free(ht);
 		}
 	}
 
-	mem_free(table->data);
+	nio_mem_free(table->data);
 	table->data = 0;
-	mem_free(table);
+	nio_mem_free(table);
 }
 
-int htable_reset(HTABLE *table, void (*free_fn) (void *))
+int nio_htable_reset(NIO_HTABLE *table, void (*free_fn) (void *))
 {
 	unsigned i = table->size;
-	HTABLE_INFO *ht;
-	HTABLE_INFO *next;
-	HTABLE_INFO **h;
+	NIO_HTABLE_INFO *ht;
+	NIO_HTABLE_INFO *next;
+	NIO_HTABLE_INFO **h;
 	int ret;
 
 	h = table->data;
@@ -421,25 +421,25 @@ int htable_reset(HTABLE *table, void (*free_fn) (void *))
 	while (i-- > 0) {
 		for (ht = *h++; ht; ht = next) {
 			next = ht->next;
-			mem_free(ht->key);
+			nio_mem_free(ht->key);
 			if (free_fn && ht->value) {
 				(*free_fn) (ht->value);
 			}
-			mem_free(ht);
+			nio_mem_free(ht);
 		}
 	}
-	mem_free(table->data);
-	ret = __htable_size(table, table->init_size < 13 ? 13 : table->init_size);
+	nio_mem_free(table->data);
+	ret = __nio_htable_size(table, table->init_size < 13 ? 13 : table->init_size);
 	return ret;
 }
 
-/* htable_walk - iterate over hash table */
+/* nio_htable_walk - iterate over hash table */
 
-void htable_walk(HTABLE *table, void (*action)(HTABLE_INFO *, void *), void *arg)
+void nio_htable_walk(NIO_HTABLE *table, void (*action)(NIO_HTABLE_INFO *, void *), void *arg)
 {
 	unsigned i = table->size;
-	HTABLE_INFO **h = table->data;
-	HTABLE_INFO *ht;
+	NIO_HTABLE_INFO **h = table->data;
+	NIO_HTABLE_INFO *ht;
 
 	while (i-- > 0) {
 		for (ht = *h++; ht; ht = ht->next) {
@@ -448,7 +448,7 @@ void htable_walk(HTABLE *table, void (*action)(HTABLE_INFO *, void *), void *arg
 	}
 }
 
-int htable_size(const HTABLE *table)
+int nio_htable_size(const NIO_HTABLE *table)
 {
 	if (table) {
 		return table->size;
@@ -457,7 +457,7 @@ int htable_size(const HTABLE *table)
 	}
 }
 
-int htable_used(const HTABLE *table)
+int nio_htable_used(const NIO_HTABLE *table)
 {
 	if (table) {
 		return table->used;
@@ -467,23 +467,23 @@ int htable_used(const HTABLE *table)
 }
 
 /*
-HTABLE_INFO **htable_data(HTABLE *table)
+NIO_HTABLE_INFO **nio_htable_data(NIO_HTABLE *table)
 {
-	return (HTABLE_INFO**) table->data;
+	return (NIO_HTABLE_INFO**) table->data;
 }
 */
 
-/* htable_list - list all table members */
+/* nio_htable_list - list all table members */
 
-HTABLE_INFO **htable_list(const HTABLE *table)
+NIO_HTABLE_INFO **nio_htable_list(const NIO_HTABLE *table)
 {
-	HTABLE_INFO **list;
-	HTABLE_INFO *member;
+	NIO_HTABLE_INFO **list;
+	NIO_HTABLE_INFO *member;
 	int     count = 0;
 	int     i;
 
 	if (table != 0) {
-		list = (HTABLE_INFO **) mem_malloc(sizeof(*list) * (table->used + 1));
+		list = (NIO_HTABLE_INFO **) nio_mem_malloc(sizeof(*list) * (table->used + 1));
 		for (i = 0; i < table->size; i++) {
 			for (member = table->data[i]; member != 0;
 				member = member->next) {
@@ -491,15 +491,15 @@ HTABLE_INFO **htable_list(const HTABLE *table)
 			}
 		}
 	} else {
-		list = (HTABLE_INFO **) mem_malloc(sizeof(*list));
+		list = (NIO_HTABLE_INFO **) nio_mem_malloc(sizeof(*list));
 	}
 	list[count] = 0;
 	return list;
 }
 
-void htable_stat(const HTABLE *table)
+void nio_htable_stat(const NIO_HTABLE *table)
 {
-	HTABLE_INFO *member;
+	NIO_HTABLE_INFO *member;
 	int	i, count;
 
 	printf("hash stat count for each key:\n");

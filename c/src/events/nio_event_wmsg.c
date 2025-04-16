@@ -4,7 +4,7 @@
 #ifdef HAS_WMSG
 
 #include <winuser.h>
-#include "event_wmsg.h"
+#include "nio_event_wmsg.h"
 
 #define WM_SOCKET_NOTIFY	(WM_USER + 8192)
 
@@ -18,7 +18,7 @@ typedef struct EVENT_WMSG {
 	int  size;
 	int  count;
 
-	HTABLE *tbl;
+	NIO_HTABLE *tbl;
 } EVENT_WMSG;
 
 static EVENT_WMSG *get_hwnd_event(HWND hWnd) {
@@ -36,7 +36,7 @@ static NIO_FILE *file_event_find(EVENT_WMSG *ev, SOCKET fd) {
     //_snprintf(key, sizeof(key), "%u", fd);
     _i64toa(fd, key, 10);
 
-    return (NIO_FILE *) htable_find(ev->tbl, key);
+    return (NIO_FILE *) nio_htable_find(ev->tbl, key);
 }
 
 static void wnio_msg_free(NIO_EVENT *ev) {
@@ -53,9 +53,9 @@ static void wnio_msg_free(NIO_EVENT *ev) {
             UnregisterClass(ew->class_name, ew->hInstance);
         }
     }
-    htable_free(ew->tbl, NULL);
-    mem_free(ew->files);
-    mem_free(ew);
+    nio_htable_free(ew->tbl, NULL);
+    nio_mem_free(ew->files);
+    nio_mem_free(ew);
 }
 
 static void wnio_msg_fdmap_set(EVENT_WMSG *ev, NIO_FILE *fe) {
@@ -65,9 +65,9 @@ static void wnio_msg_fdmap_set(EVENT_WMSG *ev, NIO_FILE *fe) {
     //_snprintf(key, sizeof(key), "%u", fe->fd);
     _i64toa(fe->fd, key, 10);
 
-    pfe = (NIO_FILE *) htable_find(ev->tbl, key);
+    pfe = (NIO_FILE *) nio_htable_find(ev->tbl, key);
     if (pfe == NULL) {
-        htable_enter(ev->tbl, key, fe);
+        nio_htable_enter(ev->tbl, key, fe);
         ev->event.fdcount++;
     } else if (pfe != fe) {
         nio_msg_error("%s(%d): old fe(%p) exist, fd=%d",
@@ -81,7 +81,7 @@ static NIO_FILE *wnio_msg_fdmap_get(EVENT_WMSG *ev, SOCKET fd) {
     //_snprintf(key, sizeof(key), "%u", fd);
     _i64toa(fd, key, 10);
 
-    return (NIO_FILE *) htable_find(ev->tbl, key);
+    return (NIO_FILE *) nio_htable_find(ev->tbl, key);
 }
 
 static void wnio_msg_fdmap_del(EVENT_WMSG *ev, NIO_FILE *fe) {
@@ -90,7 +90,7 @@ static void wnio_msg_fdmap_del(EVENT_WMSG *ev, NIO_FILE *fe) {
     //_snprintf(key, sizeof(key), "%u", fe->fd);
     _i64toa(fe->fd, key, 10);
 
-    if (htable_delete(ev->tbl, key, NULL) == 0) {
+    if (nio_htable_delete(ev->tbl, key, NULL) == 0) {
         ev->event.fdcount--;
     }
 }
@@ -398,11 +398,11 @@ static const char *wnio_msg_name(void) {
 static const char *__class_name = "__EventEventsMainWClass";
 
 NIO_EVENT *event_wnio_msg_create(int size) {
-    EVENT_WMSG *ew = (EVENT_WMSG *) mem_calloc(1, sizeof(EVENT_WMSG));
+    EVENT_WMSG *ew = (EVENT_WMSG *) nio_mem_calloc(1, sizeof(EVENT_WMSG));
     HINSTANCE hInstance = GetModuleHandle(NULL);
     HWND hWnd = CreateSockWindow(__class_name, hInstance);
 
-    ew->files = (NIO_FILE**) mem_calloc(size, sizeof(NIO_FILE*));
+    ew->files = (NIO_FILE**) nio_mem_calloc(size, sizeof(NIO_FILE*));
     ew->size  = size;
     ew->count = 0;
 
@@ -410,7 +410,7 @@ NIO_EVENT *event_wnio_msg_create(int size) {
     ew->hWnd         = hWnd;
     ew->hInstance    = hInstance;
     ew->class_name   = __class_name;
-    ew->tbl          = htable_create(10);
+    ew->tbl          = nio_htable_create(10);
 
     ew->event.name   = wnio_msg_name;
     ew->event.handle = wnio_msg_handle;

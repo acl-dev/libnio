@@ -7,7 +7,7 @@
 #pragma comment(lib, "Kernel32.lib")
 #pragma comment(lib, "Mswsock.lib")
 
-#include "event_iocp.h"
+#include "nio_event_iocp.h"
 
 typedef BOOL (PASCAL FAR* LPFN_CONNECTEX) (
     IN   SOCKET s,
@@ -83,7 +83,7 @@ static int iocp_close_sock(EVENT_IOCP *ev, NIO_FILE_ *fe) {
          */
         if (HasOverlappedIoCompleted(&fe->reader->overlapped)) {
             if (fe->reader->refer == 0) {
-                mem_free(fe->reader);
+                nio_mem_free(fe->reader);
             } else {
                 fe->reader->fe = NULL;
             }
@@ -101,7 +101,7 @@ static int iocp_close_sock(EVENT_IOCP *ev, NIO_FILE_ *fe) {
          */
         if (HasOverlappedIoCompleted(&fe->writer->overlapped)) {
             if (fe->writer->refer == 0) {
-                mem_free(fe->writer);
+                nio_mem_free(fe->writer);
             } else {
                 fe->writer->fe = NULL;
             }
@@ -115,7 +115,7 @@ static int iocp_close_sock(EVENT_IOCP *ev, NIO_FILE_ *fe) {
 
     if (fe->poller_read) {
         if (fe->poller_read->refer == 0) {
-            mem_free(fe->poller_read);
+            nio_mem_free(fe->poller_read);
         } else {
             fe->poller_read->fe = NULL;
         }
@@ -123,7 +123,7 @@ static int iocp_close_sock(EVENT_IOCP *ev, NIO_FILE_ *fe) {
 
     if (fe->poller_write) {
         if (fe->poller_write->refer == 0) {
-            mem_free(fe->poller_write);
+            nio_mem_free(fe->poller_write);
         } else {
             fe->poller_write->fe = NULL;
         }
@@ -201,7 +201,7 @@ static int iocp_add_read(EVENT_IOCP *ev, NIO_FILE_ *fe) {
      */
     if (IS_POLLING(fe)) {
         if (fe->poller_read == NULL) {
-            fe->poller_read = (IOCP_EVENT*) mem_calloc(1, sizeof(IOCP_EVENT));
+            fe->poller_read = (IOCP_EVENT*) nio_mem_calloc(1, sizeof(IOCP_EVENT));
             fe->poller_read->refer = 0;
             fe->poller_read->fe    = fe;
             fe->poller_read->type  = IOCP_EVENT_POLLR;
@@ -209,7 +209,7 @@ static int iocp_add_read(EVENT_IOCP *ev, NIO_FILE_ *fe) {
         event = fe->poller_read;
     } else {
         if (fe->reader == NULL) {
-            fe->reader = (IOCP_EVENT*) mem_calloc(1, sizeof(IOCP_EVENT));
+            fe->reader = (IOCP_EVENT*) nio_mem_calloc(1, sizeof(IOCP_EVENT));
             fe->reader->refer = 0;
             fe->reader->fe    = fe;
             fe->reader->type = IOCP_NIO_EVENT_READ;
@@ -260,7 +260,7 @@ static int iocp_add_write(EVENT_IOCP *ev, NIO_FILE_ *fe) {
      */
     if (IS_POLLING(fe)) {
         if (fe->poller_write == NULL) {
-            fe->poller_write = (IOCP_EVENT*) mem_calloc(1, sizeof(IOCP_EVENT));
+            fe->poller_write = (IOCP_EVENT*) nio_mem_calloc(1, sizeof(IOCP_EVENT));
             fe->poller_write->refer = 0;
             fe->poller_write->fe    = fe;
             fe->poller_write->type  = IOCP_EVENT_POLLW;
@@ -268,7 +268,7 @@ static int iocp_add_write(EVENT_IOCP *ev, NIO_FILE_ *fe) {
         event = fe->poller_write;
     } else {
         if (fe->writer == NULL) {
-            fe->writer        = (IOCP_EVENT*) mem_malloc(sizeof(IOCP_EVENT));
+            fe->writer        = (IOCP_EVENT*) nio_mem_malloc(sizeof(IOCP_EVENT));
             fe->writer->refer = 0;
             fe->writer->fe    = fe;
             fe->writer->type = IOCP_NIO_EVENT_WRITE;
@@ -375,7 +375,7 @@ static int iocp_wait(NIO_EVENT *ev, int timeout) {
             }
 
             if (event->type & IOCP_EVENT_DEAD) {
-                mem_free(event);
+                nio_mem_free(event);
                 continue;
             }
 
@@ -387,7 +387,7 @@ static int iocp_wait(NIO_EVENT *ev, int timeout) {
         event->refer--;
         if (event->fe == NULL) {
             if (event->refer == 0) {
-                mem_free(event);
+                nio_mem_free(event);
             }
             continue;
         }
@@ -421,8 +421,8 @@ static void iocp_free(NIO_EVENT *ev) {
         CloseHandle(ei->h_iocp);
     }
     nio_array_free(ei->events, NULL);
-    mem_free(ei->files);
-    mem_free(ei);
+    nio_mem_free(ei->files);
+    nio_mem_free(ei);
 }
 
 static int iocp_checkfd(EVENT_IOCP *ev, NIO_FILE_ *fe) {
@@ -440,7 +440,7 @@ static const char *iocp_name(void) {
 }
 
 NIO_EVENT *nio_iocp_create(int size) {
-    EVENT_IOCP *ei = (EVENT_IOCP *) mem_calloc(1, sizeof(EVENT_IOCP));
+    EVENT_IOCP *ei = (EVENT_IOCP *) nio_mem_calloc(1, sizeof(EVENT_IOCP));
 
     ei->h_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
     if (ei->h_iocp == NULL) {
@@ -450,7 +450,7 @@ NIO_EVENT *nio_iocp_create(int size) {
 
     ei->events = nio_array_create(100);
 
-    ei->files = (NIO_FILE_**) mem_calloc(size, sizeof(NIO_FILE_*));
+    ei->files = (NIO_FILE_**) nio_mem_calloc(size, sizeof(NIO_FILE_*));
     ei->size  = size;
     ei->count = 0;
 

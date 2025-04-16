@@ -5,6 +5,6 @@
 #include "common/iterator.h"
 #include "common/nio_array.h"
 #include "common/nio_ring.h"
-#include "common/memory.h"
+#include "common/nio_memory.h"
 
 #endif
