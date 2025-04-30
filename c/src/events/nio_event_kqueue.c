@@ -149,6 +149,7 @@ static int kqueue_wait(NIO_EVENT *ev, int timeout) {
     struct timespec ts;
     struct kevent *kev;
     NIO_FILE_ *fe;
+    nio_event_proc *r_proc, *w_proc;
     int n, i;
 
     ts.tv_sec = timeout / 1000;
@@ -170,14 +171,24 @@ static int kqueue_wait(NIO_EVENT *ev, int timeout) {
 
     for (i = 0; i < n; i++) {
         kev = &ek->events[i];
-        fe  = (NIO_FILE_ *) kev->udata;
-
-        if (kev && kev->filter == EVFILT_READ && fe && fe->r_proc) {
-            fe->r_proc(ev, (NIO_FILE*) fe);
+        if (kev == NULL) {
+            continue;
         }
 
-        if (kev && kev->filter == EVFILT_WRITE && fe && fe->w_proc) {
-            fe->w_proc(ev, (NIO_FILE*) fe);
+        fe  = (NIO_FILE_ *) kev->udata;
+        if (fe == NULL) {
+            continue;
+        }
+
+        r_proc = fe->r_proc;
+        w_proc = fe->w_proc;
+
+        if (kev->filter == EVFILT_READ && r_proc) {
+            r_proc(ev, (NIO_FILE*) fe);
+        }
+
+        if (kev->filter == EVFILT_WRITE && w_proc) {
+            w_proc(ev, (NIO_FILE*) fe);
         }
     }
 

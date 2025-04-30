@@ -129,6 +129,7 @@ static int poll_del_write(EVENT_POLL *ep, NIO_FILE_ *fe) {
 
 static int poll_wait(NIO_EVENT *ev, int timeout) {
     EVENT_POLL *ep = (EVENT_POLL *) ev;
+    nio_event_proc *r_proc, *w_proc;
     ITER  iter;
     int n, i;
 
@@ -161,14 +162,17 @@ static int poll_wait(NIO_EVENT *ev, int timeout) {
         NIO_FILE_ *fe = (NIO_FILE_ *) iter.data;
         struct pollfd *pfd = &ep->pfds[fe->id];
 
+        r_proc = fe->r_proc;
+        w_proc = fe->w_proc;
+
 #define EVENT_ERR	(POLLERR | POLLHUP | POLLNVAL)
 
-        if (pfd->revents & (POLLIN | EVENT_ERR) && fe->r_proc) {
-            fe->r_proc(ev, (NIO_FILE*) fe);
+        if (pfd->revents & (POLLIN | EVENT_ERR) && r_proc) {
+            r_proc(ev, (NIO_FILE*) fe);
         }
 
-        if (pfd->revents & (POLLOUT | EVENT_ERR ) && fe->w_proc) {
-            fe->w_proc(ev, (NIO_FILE*) fe);
+        if (pfd->revents & (POLLOUT | EVENT_ERR ) && w_proc) {
+            w_proc(ev, (NIO_FILE*) fe);
         }
     }
 

@@ -161,6 +161,7 @@ static int epoll_event_wait(NIO_EVENT *ev, int timeout) {
     EVENT_EPOLL *ep = (EVENT_EPOLL *) ev;
     struct epoll_event *ee;
     NIO_FILE_ *fe;
+    nio_event_proc *r_proc, *w_proc;
     int n, i;
 
     n = epoll_wait(ep->epfd, ep->events, ep->size, timeout);
@@ -178,15 +179,21 @@ static int epoll_event_wait(NIO_EVENT *ev, int timeout) {
     for (i = 0; i < n; i++) {
         ee = &ep->events[i];
         fe = (NIO_FILE_ *) ee->data.ptr;
+        if (fe == NULL) {
+            continue;
+        }
+
+        r_proc = fe->r_proc;
+        w_proc = fe->w_proc;
 
 #define EVENT_ERR	(EPOLLERR | EPOLLHUP)
 
-        if (ee->events & (EPOLLIN | EVENT_ERR) && fe && fe->r_proc) {
-            fe->r_proc(ev, (NIO_FILE*) fe);
+        if (ee->events & (EPOLLIN | EVENT_ERR) && r_proc) {
+            r_proc(ev, (NIO_FILE*) fe);
         }
 
-        if (ee->events & (EPOLLOUT | EVENT_ERR) && fe && fe->w_proc) {
-            fe->w_proc(ev, (NIO_FILE*) fe);
+        if (ee->events & (EPOLLOUT | EVENT_ERR) && w_proc) {
+            w_proc(ev, (NIO_FILE*) fe);
         }
     }
 

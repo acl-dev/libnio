@@ -112,6 +112,7 @@ static int select_event_wait(NIO_EVENT *ev, int timeout) {
     EVENT_SELECT *es = (EVENT_SELECT *) ev;
     fd_set rset = es->rset, wset = es->wset, xset = es->xset;
     struct timeval tv, *tp;
+    nio_event_proc *r_proc, *w_proc;
     ITER   iter;
     int n, i;
 
@@ -159,25 +160,27 @@ static int select_event_wait(NIO_EVENT *ev, int timeout) {
     foreach(iter, es->ready) {
         NIO_FILE_ *fe = (NIO_FILE_ *) iter.data;
 
+        r_proc = fe->r_proc;
+        w_proc = fe->w_proc;
+
         if (FD_ISSET(fe->fd, &xset)) {
-            if (FD_ISSET(fe->fd, &es->rset) && fe->r_proc) {
-                fe->r_proc(ev, (NIO_FILE*) fe);
+            if (FD_ISSET(fe->fd, &es->rset) && r_proc) {
+                r_proc(ev, (NIO_FILE*) fe);
             }
-            if (FD_ISSET(fe->fd, &es->wset) && fe->w_proc) {
-                fe->w_proc(ev, (NIO_FILE*) fe);
+            if (FD_ISSET(fe->fd, &es->wset) && w_proc) {
+                w_proc(ev, (NIO_FILE*) fe);
             }
         } else {
-            if (FD_ISSET(fe->fd, &rset) && fe->r_proc) {
-                fe->r_proc(ev, (NIO_FILE*) fe);
+            if (FD_ISSET(fe->fd, &rset) && r_proc) {
+                r_proc(ev, (NIO_FILE*) fe);
             }
-            if (FD_ISSET(fe->fd, &wset) && fe->w_proc) {
-                fe->w_proc(ev, (NIO_FILE*) fe);
+            if (FD_ISSET(fe->fd, &wset) && w_proc) {
+                w_proc(ev, (NIO_FILE*) fe);
             }
         }
     }
 
     nio_array_clean(es->ready, NULL);
-
     return n;
 }
 
