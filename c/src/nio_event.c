@@ -179,9 +179,10 @@ void nio_event_del_read(NIO_EVENT *ev, NIO_FILE *fe) {
             ev->del_read(ev, (NIO_FILE_*) fe);
         } else if (((NIO_FILE_*) fe)->me.parent == &((NIO_FILE_*) fe)->me) {
             nio_ring_prepend(&ev->events, &((NIO_FILE_*) fe)->me);
+            ((NIO_FILE_*) fe)->oper |= NIO_EVENT_DEL_READ;
+        } else {
+            ((NIO_FILE_*) fe)->oper |= NIO_EVENT_DEL_READ;
         }
-
-        ((NIO_FILE_*) fe)->oper |= NIO_EVENT_DEL_READ;
     }
 
     ((NIO_FILE_*) fe)->r_proc  = NULL;
@@ -199,9 +200,11 @@ void nio_event_del_write(NIO_EVENT *ev, NIO_FILE *fe) {
             ev->del_write(ev, (NIO_FILE_*) fe);
         } else if (((NIO_FILE_*) fe)->me.parent == &((NIO_FILE_*) fe)->me) {
             nio_ring_prepend(&ev->events, &((NIO_FILE_*) fe)->me);
+            ((NIO_FILE_*) fe)->oper |= NIO_EVENT_DEL_WRITE;
+        } else {
+            ((NIO_FILE_*) fe)->oper |= NIO_EVENT_DEL_WRITE;
         }
 
-        ((NIO_FILE_*) fe)->oper |= NIO_EVENT_DEL_WRITE;
     }
 
     ((NIO_FILE_*) fe)->w_proc = NULL;
@@ -223,6 +226,8 @@ void nio_event_close(NIO_EVENT *ev, NIO_FILE *fe) {
     if (((NIO_FILE_*) fe)->me.parent != &((NIO_FILE_*) fe)->me) {
         nio_ring_detach(&((NIO_FILE_*) fe)->me);
     }
+
+    ((NIO_FILE_*) fe)->oper = 0;
 
     // Force to delete read/write event monitor for the given fd.
     if (ev->event_fflush) {
