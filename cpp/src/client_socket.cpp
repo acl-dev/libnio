@@ -31,11 +31,18 @@ socket_t client_socket::sock_handle() const {
 }
 
 void client_socket::read_disable() {
+    assert(fe_);
     nio_event_del_read(ev_.get_event(), fe_);
 }
 
 void client_socket::write_disable() {
+    assert(fe_);
     nio_event_del_write(ev_.get_event(), fe_);
+}
+
+void client_socket::readwrite_disable() {
+    assert(fe_);
+    nio_event_del_readwrite(ev_.get_event(), fe_);
 }
 
 bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
@@ -95,7 +102,7 @@ void client_socket::connect_callback(NIO_EVENT *ev, NIO_FILE *fe) {
         nio_event_del_write(ev, fe);
         cli->on_connect_(fe->fd, false);
     } else {
-        nio_event_close(ev, fe);
+        nio_event_del_readwrite(ev, fe);
         cli->on_connect_(-1, false);
     }
 }
@@ -229,7 +236,7 @@ void client_socket::set_closing() {
 void client_socket::close_await() {
     if (!closing_) {
         if (fe_ && fe_->fd >= 0) {
-            nio_event_close(ev_.get_event(), fe_);
+            nio_event_del_readwrite(ev_.get_event(), fe_);
         }
         ev_.delay_close(this);
         closing_ = true;

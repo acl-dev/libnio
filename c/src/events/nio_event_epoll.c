@@ -99,6 +99,8 @@ static int epoll_del_read(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
     struct epoll_event ee;
     int op, n = 0;
 
+    fe->mask &= ~NIO_EVENT_READ;
+
     ee.events   = 0;
     ee.data.u64 = 0;
     ee.data.fd  = 0;
@@ -114,7 +116,6 @@ static int epoll_del_read(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
     }
 
     if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
-        fe->mask &= ~NIO_EVENT_READ;
         ep->event.fdcount += n;
         return 0;
     }
@@ -129,6 +130,8 @@ static int epoll_del_read(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
 static int epoll_del_write(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
     struct epoll_event ee;
     int op, n;
+
+    fe->mask &= ~NIO_EVENT_WRITE;
 
     ee.events   = 0;
     ee.data.u64 = 0;
@@ -145,8 +148,31 @@ static int epoll_del_write(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
     }
 
     if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
-        fe->mask &= ~NIO_EVENT_WRITE;
         ep->event.fdcount += n;
+        return 0;
+    }
+
+    if (errno != EEXIST) {
+        nio_msg_error("%s(%d), epoll_ctl error: %d, efd=%d, fd=%d",
+                __FUNCTION__, __LINE__, nio_last_error(), ep->epfd, fe->fd);
+    }
+    return -1;
+}
+
+static int epoll_del_readwrite(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
+    struct epoll_event ee;
+    int op;
+
+    fe->mask = NIO_EVENT_NONE;
+
+    ee.events   = 0;
+    ee.data.u64 = 0;
+    ee.data.fd  = 0;
+    ee.data.ptr = fe;
+    op = EPOLL_CTL_DEL;
+
+    if (epoll_ctl(ep->epfd, op, fe->fd, &ee) == 0) {
+        ep->event.fdcount--;
         return 0;
     }
 
@@ -236,12 +262,13 @@ NIO_EVENT *nio_epoll_create(int size) {
     ep->event.handle = (nio_handle_t (*)(NIO_EVENT *)) epoll_handle;
     ep->event.free   = epoll_free;
 
-    ep->event.event_wait = epoll_event_wait;
-    ep->event.checkfd    = (nio_event_oper *) epoll_checkfd;
-    ep->event.add_read   = (nio_event_oper *) epoll_add_read;
-    ep->event.add_write  = (nio_event_oper *) epoll_add_write;
-    ep->event.del_read   = (nio_event_oper *) epoll_del_read;
-    ep->event.del_write  = (nio_event_oper *) epoll_del_write;
+    ep->event.event_wait    = epoll_event_wait;
+    ep->event.checkfd       = (nio_event_oper *) epoll_checkfd;
+    ep->event.add_read      = (nio_event_oper *) epoll_add_read;
+    ep->event.add_write     = (nio_event_oper *) epoll_add_write;
+    ep->event.del_read      = (nio_event_oper *) epoll_del_read;
+    ep->event.del_write     = (nio_event_oper *) epoll_del_write;
+    ep->event.del_readwrite = (nio_event_oper *) epoll_del_readwrite;
 
     return (NIO_EVENT*) ep;
 }

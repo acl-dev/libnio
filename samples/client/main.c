@@ -68,7 +68,7 @@ static socket_t connect_server(const char *ip, int port) {
 
 static void close_connection(NIO_EVENT *ev, NIO_FILE *fe) {
     io_ctx_t *ctx = (io_ctx_t*) fe->ctx;
-    nio_event_close(ev, fe);
+    nio_event_del_readwrite(ev, fe);
     close(fe->fd);
     nio_file_free(fe);
 

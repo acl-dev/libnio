@@ -459,13 +459,14 @@ NIO_EVENT *nio_iocp_create(int size) {
     ei->event.free   = iocp_free;
     ei->event.flags  = EVENT_F_IOCP;
 
-    ei->event.event_wait = iocp_wait;
-    ei->event.checkfd    = (nio_event_oper *) iocp_checkfd;
-    ei->event.add_read   = (nio_event_oper *) iocp_add_read;
-    ei->event.add_write  = (nio_event_oper *) iocp_add_write;
-    ei->event.del_read   = (nio_event_oper *) iocp_del_read;
-    ei->event.del_write  = (nio_event_oper *) iocp_del_write;
-    ei->event.close_sock = (nio_event_oper *) iocp_close_sock;
+    ei->event.event_wait     = iocp_wait;
+    ei->event.checkfd        = (nio_event_oper *) iocp_checkfd;
+    ei->event.add_read       = (nio_event_oper *) iocp_add_read;
+    ei->event.add_write      = (nio_event_oper *) iocp_add_write;
+    ei->event.del_read       = (nio_event_oper *) iocp_del_read;
+    ei->event.del_write      = (nio_event_oper *) iocp_del_write;
+    ei->event.del_readwrite  = NULL;
+    ei->event.close_sock     = (nio_event_oper *) iocp_close_sock;
 
     return (NIO_EVENT *) ei;
 }

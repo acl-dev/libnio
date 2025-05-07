@@ -211,12 +211,13 @@ NIO_EVENT *nio_poll_create(int size) {
     ep->event.handle = poll_handle;
     ep->event.free   = poll_free;
 
-    ep->event.event_wait = poll_wait;
-    ep->event.checkfd    = (nio_event_oper *) poll_checkfd;
-    ep->event.add_read   = (nio_event_oper *) poll_add_read;
-    ep->event.add_write  = (nio_event_oper *) poll_add_write;
-    ep->event.del_read   = (nio_event_oper *) poll_del_read;
-    ep->event.del_write  = (nio_event_oper *) poll_del_write;
+    ep->event.event_wait    = poll_wait;
+    ep->event.checkfd       = (nio_event_oper *) poll_checkfd;
+    ep->event.add_read      = (nio_event_oper *) poll_add_read;
+    ep->event.add_write     = (nio_event_oper *) poll_add_write;
+    ep->event.del_read      = (nio_event_oper *) poll_del_read;
+    ep->event.del_write     = (nio_event_oper *) poll_del_write;
+    ep->event.del_readwrite = NULL;
 
     return (NIO_EVENT*) ep;
 }

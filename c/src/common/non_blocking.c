@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "nio_msg.h"
 #include "nio/nio_iostuff.h"
+#include "nio/nio_event.h"
 
 #ifdef SYS_WIN
 int nio_non_blocking(socket_t fd, int on)

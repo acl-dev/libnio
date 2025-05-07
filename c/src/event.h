@@ -173,6 +173,7 @@ struct NIO_EVENT {
     nio_event_oper *add_write;
     nio_event_oper *del_read;
     nio_event_oper *del_write;
+    nio_event_oper *del_readwrite;
     nio_event_oper *close_sock;
 };
 

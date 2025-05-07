@@ -2,6 +2,7 @@
 
 #include "nio_msg.h"
 #include "nio/nio_iostuff.h"
+#include "nio/nio_event.h"
 
 static int getsocktype(socket_t fd)
 {

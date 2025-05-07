@@ -44,7 +44,7 @@ void event_proc::close_await() {
     }
 
     if (!closing_) {
-        nio_event_close(ev_->get_event(), fe_);
+        nio_event_del_readwrite(ev_->get_event(), fe_);
         ev_->delay_close(this);
         closing_ = true;
     }

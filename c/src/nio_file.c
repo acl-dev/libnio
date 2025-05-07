@@ -11,7 +11,7 @@ static void nio_file_init(NIO_FILE_ *fe, socket_t fd) {
     fe->status = STATUS_NONE;
     fe->type   = TYPE_NONE;
     fe->oper   = 0;
-    fe->mask   = 0;
+    fe->mask   = NIO_EVENT_NONE;
     fe->r_proc = NULL;
     fe->w_proc = NULL;
 #ifdef HAS_POLL

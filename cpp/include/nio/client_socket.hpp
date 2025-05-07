@@ -86,6 +86,11 @@ public:
     void write_disable();
 
     /**
+     * @brief Disable the read and write event.
+     */
+    void readwrite_disable();
+
+    /**
      * @brief Close the socket in async mode.
      */
     void close_await();

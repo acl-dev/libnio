@@ -35,7 +35,14 @@ struct NIO_FILE {
 	void *ctx;
 };
 
+typedef void (*NIO_MSG_WRITE_FN) (const char *fmt, va_list ap);
 typedef void nio_event_proc(NIO_EVENT *ev, NIO_FILE *fe);
+
+/* nio_msg.c */
+void nio_msg_register(NIO_MSG_WRITE_FN write_fn, void *ctx);
+void nio_msg_unregister(void);
+void nio_msg_stdout(int on);
+int nio_last_error(void);
 
 /* nio_file.c */
 NIO_FILE *nio_file_alloc(socket_t fd);
@@ -52,12 +59,12 @@ NIO_EVENT *nio_event_create(int size, int event_type, unsigned flags);
 const char *nio_event_name(NIO_EVENT *ev);
 size_t nio_event_size(NIO_EVENT *ev);
 void nio_event_free(NIO_EVENT *ev);
-void nio_event_close(NIO_EVENT *ev, NIO_FILE *fe);
 
 int  nio_event_add_read(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc);
 int  nio_event_add_write(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc);
 void nio_event_del_read(NIO_EVENT *ev, NIO_FILE *fe);
 void nio_event_del_write(NIO_EVENT *ev, NIO_FILE *fe);
+void nio_event_del_readwrite(NIO_EVENT *ev, NIO_FILE *fe);
 int  nio_event_wait(NIO_EVENT *ev, int left);
 int  nio_event_wait2(NIO_EVENT *ev, int left, void (*before_wait)(void *), void *ctx);
 

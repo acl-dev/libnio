@@ -233,13 +233,14 @@ NIO_EVENT *nio_kqueue_create(int size) {
     ek->event.handle = (nio_handle_t (*)(NIO_EVENT *)) kqueue_handle;
     ek->event.free   = kqueue_free;
 
-    ek->event.event_fflush = (int (*)(NIO_EVENT*)) kqueue_fflush;
-    ek->event.event_wait   = kqueue_wait;
-    ek->event.checkfd      = (nio_event_oper *) kqueue_checkfd;
-    ek->event.add_read     = (nio_event_oper *) kqueue_add_read;
-    ek->event.add_write    = (nio_event_oper *) kqueue_add_write;
-    ek->event.del_read     = (nio_event_oper *) kqueue_del_read;
-    ek->event.del_write    = (nio_event_oper *) kqueue_del_write;
+    ek->event.event_fflush  = (int (*)(NIO_EVENT*)) kqueue_fflush;
+    ek->event.event_wait    = kqueue_wait;
+    ek->event.checkfd       = (nio_event_oper *) kqueue_checkfd;
+    ek->event.add_read      = (nio_event_oper *) kqueue_add_read;
+    ek->event.add_write     = (nio_event_oper *) kqueue_add_write;
+    ek->event.del_read      = (nio_event_oper *) kqueue_del_read;
+    ek->event.del_write     = (nio_event_oper *) kqueue_del_write;
+    ek->event.del_readwrite = NULL;
 
     return (NIO_EVENT *) ek;
 }

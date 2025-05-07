@@ -210,13 +210,19 @@ void nio_event_del_write(NIO_EVENT *ev, NIO_FILE *fe) {
     ((NIO_FILE_*) fe)->w_proc = NULL;
 }
 
-void nio_event_close(NIO_EVENT *ev, NIO_FILE *fe) {
-    if (((NIO_FILE_*) fe)->mask & NIO_EVENT_READ) {
-        ev->del_read(ev, ((NIO_FILE_*) fe));
-    }
+void nio_event_del_readwrite(NIO_EVENT *ev, NIO_FILE *fe) {
+    if (ev->del_readwrite != NULL) {
+        if (((NIO_FILE_ *) fe)->mask & (NIO_EVENT_READ | NIO_EVENT_WRITE)) {
+            ev->del_readwrite(ev, ((NIO_FILE_ *) fe));
+        }
+    } else {
+        if (((NIO_FILE_ *) fe)->mask & NIO_EVENT_READ) {
+            ev->del_read(ev, ((NIO_FILE_ *) fe));
+        }
 
-    if (((NIO_FILE_*) fe)->mask & NIO_EVENT_WRITE) {
-        ev->del_write(ev, ((NIO_FILE_*) fe));
+        if (((NIO_FILE_ *) fe)->mask & NIO_EVENT_WRITE) {
+            ev->del_write(ev, ((NIO_FILE_ *) fe));
+        }
     }
 
     /* When one fiber add read/write and del read/write by another fiber

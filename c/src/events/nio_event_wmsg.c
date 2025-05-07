@@ -415,12 +415,13 @@ NIO_EVENT *event_wnio_msg_create(int size) {
     ew->event.name   = wnio_msg_name;
     ew->event.handle = wnio_msg_handle;
     ew->event.free   = wnio_msg_free;
-    ew->event.event_wait = wnio_msg_wait;
-    ew->event.checkfd    = (nio_event_oper *) wnio_msg_checkfd;
-    ew->event.add_read   = (nio_event_oper *) wnio_msg_add_read;
-    ew->event.add_write  = (nio_event_oper *) wnio_msg_add_write;
-    ew->event.del_read   = (nio_event_oper *) wnio_msg_del_read;
-    ew->event.del_write  = (nio_event_oper *) wnio_msg_del_write;
+    ew->event.event_wait    = wnio_msg_wait;
+    ew->event.checkfd       = (nio_event_oper *) wnio_msg_checkfd;
+    ew->event.add_read      = (nio_event_oper *) wnio_msg_add_read;
+    ew->event.add_write     = (nio_event_oper *) wnio_msg_add_write;
+    ew->event.del_read      = (nio_event_oper *) wnio_msg_del_read;
+    ew->event.del_write     = (nio_event_oper *) wnio_msg_del_write;
+    ew->event.del_readwrite = NULL;
 
     set_hwnd_event(hWnd, ew);
 

@@ -220,12 +220,13 @@ NIO_EVENT *nio_select_create(int size) {
     es->event.handle = select_handle;
     es->event.free   = select_free;
 
-    es->event.event_wait = select_event_wait;
-    es->event.checkfd    = (nio_event_oper *) select_checkfd;
-    es->event.add_read   = (nio_event_oper *) select_add_read;
-    es->event.add_write  = (nio_event_oper *) select_add_write;
-    es->event.del_read   = (nio_event_oper *) select_del_read;
-    es->event.del_write  = (nio_event_oper *) select_del_write;
+    es->event.event_wait    = select_event_wait;
+    es->event.checkfd       = (nio_event_oper *) select_checkfd;
+    es->event.add_read      = (nio_event_oper *) select_add_read;
+    es->event.add_write     = (nio_event_oper *) select_add_write;
+    es->event.del_read      = (nio_event_oper *) select_del_read;
+    es->event.del_write     = (nio_event_oper *) select_del_write;
+    es->event.del_readwrite = NULL;
 
     return (NIO_EVENT*) es;
 }

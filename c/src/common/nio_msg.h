@@ -5,11 +5,7 @@
 #include <stdio.h>
 #include "nio_define.h"
 
-void nio_msg_stdout(int on);
-
 #undef	USE_PRINTF_MACRO
-
-int nio_last_error(void);
 
 /**
  * 当记录日志信息至日志文件时，需要调用如下的日志记录函数

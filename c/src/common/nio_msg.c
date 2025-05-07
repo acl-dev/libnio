@@ -1,17 +1,30 @@
 #include "stdafx.h"
 #include "nio_msg.h"
+#include "nio/nio_event.h"
 
 static int stdout_on = 0;
+static NIO_MSG_WRITE_FN __write_fn = NULL;
+static void *__msg_ctx = NULL;
 
-void nio_msg_stdout(int on)
-{
+void nio_msg_register(NIO_MSG_WRITE_FN write_fn, void *ctx) {
+    if (write_fn != NULL) {
+        __write_fn = write_fn;
+        __msg_ctx  = ctx;
+    }
+}
+
+void nio_msg_unregister(void) {
+    __write_fn = NULL;
+    __msg_ctx  = NULL;
+}
+
+void nio_msg_stdout(int on) {
 	stdout_on = on;
 }
 
 #ifndef	USE_PRINTF_MACRO
 
-int nio_last_error(void)
-{
+int nio_last_error(void) {
 #ifdef	SYS_WIN
 	int   error;
 
@@ -23,8 +36,7 @@ int nio_last_error(void)
 #endif
 }
 
-static void fmt_printf(const char *tag, const char *fmt, va_list ap)
-{
+static void fmt_printf(const char *tag, const char *fmt, va_list ap) {
 #if (defined(_WIN32) || defined(_WIN64)) && _MSC_VER < 1900
 	printf("%s->pid(%d), ", tag, GETPID());
 	vprintf(fmt, ap);
@@ -37,47 +49,55 @@ static void fmt_printf(const char *tag, const char *fmt, va_list ap)
 	printf("\r\n");
 }
 
-void nio_msg_info(const char *fmt,...)
-{
+void nio_msg_info(const char *fmt,...) {
 	va_list ap;
 
 	va_start (ap, fmt);
 	if (stdout_on) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
+    if (__write_fn != NULL) {
+        __write_fn(fmt, ap);
+    }
 	va_end (ap);
 }
 
-void nio_msg_warn(const char *fmt,...)
-{
+void nio_msg_warn(const char *fmt,...) {
 	va_list ap;
 
 	va_start (ap, fmt);
 	if (stdout_on) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
+    if (__write_fn != NULL) {
+        __write_fn(fmt, ap);
+    }
 	va_end (ap);
 }
 
-void nio_msg_error(const char *fmt,...)
-{
+void nio_msg_error(const char *fmt,...) {
 	va_list ap;
 
 	va_start (ap, fmt);
 	if (stdout_on) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
+    if (__write_fn != NULL) {
+        __write_fn(fmt, ap);
+    }
 	va_end (ap);
 }
 
-void nio_msg_fatal(const char *fmt,...)
-{
+void nio_msg_fatal(const char *fmt,...) {
 	va_list ap;
 
 	va_start (ap, fmt);
 	if (stdout_on) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
+    if (__write_fn != NULL) {
+        __write_fn(fmt, ap);
+    }
 	va_end (ap);
 	abort();
 }
