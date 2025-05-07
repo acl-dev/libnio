@@ -35,7 +35,7 @@ struct NIO_FILE {
 	void *ctx;
 };
 
-typedef void (*NIO_MSG_WRITE_FN) (const char *fmt, va_list ap);
+typedef void (*NIO_MSG_WRITE_FN) (void *ctx, const char *fmt, va_list ap);
 typedef void nio_event_proc(NIO_EVENT *ev, NIO_FILE *fe);
 
 /* nio_msg.c */

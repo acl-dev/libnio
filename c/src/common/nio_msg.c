@@ -57,7 +57,7 @@ void nio_msg_info(const char *fmt,...) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
     if (__write_fn != NULL) {
-        __write_fn(fmt, ap);
+        __write_fn(__msg_ctx, fmt, ap);
     }
 	va_end (ap);
 }
@@ -70,7 +70,7 @@ void nio_msg_warn(const char *fmt,...) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
     if (__write_fn != NULL) {
-        __write_fn(fmt, ap);
+        __write_fn(__msg_ctx, fmt, ap);
     }
 	va_end (ap);
 }
@@ -83,7 +83,7 @@ void nio_msg_error(const char *fmt,...) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
     if (__write_fn != NULL) {
-        __write_fn(fmt, ap);
+        __write_fn(__msg_ctx, fmt, ap);
     }
 	va_end (ap);
 }
@@ -96,7 +96,7 @@ void nio_msg_fatal(const char *fmt,...) {
 		fmt_printf(__FUNCTION__, fmt, ap);
 	}
     if (__write_fn != NULL) {
-        __write_fn(fmt, ap);
+        __write_fn(__msg_ctx, fmt, ap);
     }
 	va_end (ap);
 	abort();
