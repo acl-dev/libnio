@@ -256,9 +256,12 @@ void client_socket::close() {
     if (fe_ && fe_->fd >= 0) {
         int fd = fe_->fd;
         if (on_close_ != nullptr) {
-            on_close_(fe_->fd);
+            if (on_close_(fe_->fd)) {
+                ::close(fd);
+            }
+        } else {
+            ::close(fd);
         }
-        ::close(fd);
     } else if (on_close_ != nullptr) {
         on_close_(-1);
     }

@@ -53,6 +53,9 @@ NIO_EVENT *nio_event_create(int size, int nio_event_type, unsigned flags) {
     ev->waiter  = 0;
     ev->flags  |= flags;
 
+    nio_msg_info("%s(%d): nio max size=%d, flags=%u", __FUNCTION__, __LINE__,
+        size, flags);
+
     return ev;
 }
 

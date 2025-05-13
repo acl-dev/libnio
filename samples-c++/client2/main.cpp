@@ -55,6 +55,7 @@ static bool connect_server(nio_event &ev, const char *ip, int port, int timeout)
     }).on_close([cli](socket_t fd) {
         delete cli;
         nconns--;
+        return true;
     });
 
     if (!cli->connect_await(ip, port, 5000)) {

@@ -38,6 +38,7 @@ static void handle_client(client_socket *cli, int timeout) {
     }).on_close([cli](socket_t fd) {
         printf("Closing client fd %d\r\n", fd);
         delete cli;
+        return true;
     }).read_await(timeout);
 }
 

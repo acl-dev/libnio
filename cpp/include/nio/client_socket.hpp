@@ -28,7 +28,7 @@ using write_handler_t   = std::function<void(socket_t, bool)>;
 using error_handler_t   = std::function<void(socket_t)>;
 
 // The handler when the socket is closed.
-using close_handler_t   = std::function<void(socket_t)>;
+using close_handler_t   = std::function<int(socket_t)>;
 
 /**
  * @brief The client socket class for client socket read and write operations.
