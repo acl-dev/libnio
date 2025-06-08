@@ -1,5 +1,5 @@
-#ifndef _MSG_INCLUDE_H_
-#define _MSG_INCLUDE_H_
+#ifndef __NIO_MSG_INCLUDE_H__
+#define __NIO_MSG_INCLUDE_H__
 
 #include <stdarg.h>
 #include <stdio.h>

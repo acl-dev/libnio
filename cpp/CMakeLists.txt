@@ -50,11 +50,14 @@ endif()
 
 ##############################################################################
 
-set(src ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(src ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/mqtt
+   )
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_SOURCE_DIR}/../c/src
 )
 
 foreach(iter ${src})

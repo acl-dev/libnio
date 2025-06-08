@@ -16,6 +16,8 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
+#include "../../c/src/nio_define.h"
+#include "../../c/src/common/nio_msg.h"
 #include "../../c/include/nio/nio_event.h"
 
 typedef union {
@@ -29,3 +31,7 @@ typedef union {
 #endif
 	struct sockaddr sa;
 } SOCK_ADDR;
+
+#ifndef NEW
+# define NEW new
+#endif
