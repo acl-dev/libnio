@@ -5,46 +5,50 @@
 #include <stdio.h>
 #include "nio_define.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #undef	USE_PRINTF_MACRO
 
 /**
- * µ±¼ÇÂ¼ÈÕÖ¾ĞÅÏ¢ÖÁÈÕÖ¾ÎÄ¼şÊ±£¬ĞèÒªµ÷ÓÃÈçÏÂµÄÈÕÖ¾¼ÇÂ¼º¯Êı
+ * å½“è®°å½•æ—¥å¿—ä¿¡æ¯è‡³æ—¥å¿—æ–‡ä»¶æ—¶ï¼Œéœ€è¦è°ƒç”¨å¦‚ä¸‹çš„æ—¥å¿—è®°å½•å‡½æ•°
  */
 
 #ifndef	USE_PRINTF_MACRO
 
 /**
- * Ò»°ã¼¶±ğÈÕÖ¾ĞÅÏ¢¼ÇÂ¼º¯Êı
- * @param fmt {const char*} ²ÎÊı¸ñÊ½
- * @param ... ±ä²ÎĞòÁĞ
+ * ä¸€èˆ¬çº§åˆ«æ—¥å¿—ä¿¡æ¯è®°å½•å‡½æ•°
+ * @param fmt {const char*} å‚æ•°æ ¼å¼
+ * @param ... å˜å‚åºåˆ—
  */
 void PRINTF(1, 2) nio_msg_info(const char *fmt,...);
 
 /**
- * ¾¯¸æ¼¶±ğÈÕÖ¾ĞÅÏ¢¼ÇÂ¼º¯Êı
- * @param fmt {const char*} ²ÎÊı¸ñÊ½
- * @param ... ±ä²ÎĞòÁĞ
+ * è­¦å‘Šçº§åˆ«æ—¥å¿—ä¿¡æ¯è®°å½•å‡½æ•°
+ * @param fmt {const char*} å‚æ•°æ ¼å¼
+ * @param ... å˜å‚åºåˆ—
  */
 void PRINTF(1, 2) nio_msg_warn(const char *fmt,...);
 
 /**
- * ´íÎó¼¶±ğÈÕÖ¾ĞÅÏ¢¼ÇÂ¼º¯Êı
- * @param fmt {const char*} ²ÎÊı¸ñÊ½
- * @param ... ±ä²ÎĞòÁĞ
+ * é”™è¯¯çº§åˆ«æ—¥å¿—ä¿¡æ¯è®°å½•å‡½æ•°
+ * @param fmt {const char*} å‚æ•°æ ¼å¼
+ * @param ... å˜å‚åºåˆ—
  */
 void PRINTF(1, 2) nio_msg_error(const char *fmt,...);
 
 /**
- * ÖÂÃü¼¶±ğÈÕÖ¾ĞÅÏ¢¼ÇÂ¼º¯Êı
- * @param fmt {const char*} ²ÎÊı¸ñÊ½
- * @param ... ±ä²ÎĞòÁĞ
+ * è‡´å‘½çº§åˆ«æ—¥å¿—ä¿¡æ¯è®°å½•å‡½æ•°
+ * @param fmt {const char*} å‚æ•°æ ¼å¼
+ * @param ... å˜å‚åºåˆ—
  */
 void PRINTF(1, 2) nio_msg_fatal(const char *fmt,...);
 
 #else
 
 /**
- * µ±¼ÇÂ¼ÈÕÖ¾ĞÅÏ¢ÖÁ±ê×¼Êä³öÊ±£¬ĞèÒªµ÷ÓÃÈçÏÂµÄÈÕÖ¾¼ÇÂ¼º¯Êı
+ * å½“è®°å½•æ—¥å¿—ä¿¡æ¯è‡³æ ‡å‡†è¾“å‡ºæ—¶ï¼Œéœ€è¦è°ƒç”¨å¦‚ä¸‹çš„æ—¥å¿—è®°å½•å‡½æ•°
  */
 
 #include <stdio.h>
@@ -62,10 +66,14 @@ void PRINTF(1, 2) nio_msg_fatal(const char *fmt,...);
 #endif
 
 /**
- * Êä³öĞÅÏ¢ÖÁ±ê×¼Êä³ö
- * @param fmt {const char*} ¸ñÊ½²ÎÊı
- * @param ... ±ä²ÎĞòÁĞ
+ * è¾“å‡ºä¿¡æ¯è‡³æ ‡å‡†è¾“å‡º
+ * @param fmt {const char*} æ ¼å¼å‚æ•°
+ * @param ... å˜å‚åºåˆ—
  */
 void PRINTF(1, 2) nio_msg_printf(const char *fmt,...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
