@@ -31,7 +31,7 @@ static void handle_client(client_socket *cli, int timeout) {
                 conn->get_conn().close_await();
                 return false;
             }
-            printf("Sent PINGRESP to client fd %d\r\n", conn->get_conn().sock_handle());
+            // printf("Sent PINGRESP to client fd %d\r\n", conn->get_conn().sock_handle());
             return true;
         } else if (type == MQTT_DISCONNECT) {
             // If it's a DISCONNECT, we should close the connection

@@ -90,7 +90,7 @@ bool mqtt_publish::to_string(std::string& out) {
     }
 
     if (payload_len_ > 0 && !payload_.empty()) {
-        out.append(payload_, payload_len_);
+        out.append(payload_.c_str(), payload_len_);
     }
 
     return true;

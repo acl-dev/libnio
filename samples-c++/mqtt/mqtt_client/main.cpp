@@ -25,9 +25,16 @@ static int nconns = 0;
 
 static void handle_client(client_socket *cli, int timeout) {
     auto *conn = new mqtt_client(*cli);
+
+    // Handle message from server when getting one message.
     conn->on_message([conn](const mqtt_message &msg) {
-        printf("Received message on client fd %d\r\n", conn->get_conn().sock_handle());
-        if (++count >= total_count) {
+        ++count;
+
+        if (count < 10) {
+            printf("Received message on client fd %d\r\n", conn->get_conn().sock_handle());
+        }
+
+        if (count >= total_count) {
             printf("Total count reached: %lld\r\n", count);
             return false;
         }
@@ -43,25 +50,26 @@ static void handle_client(client_socket *cli, int timeout) {
         return false;
     });
 
-    #if 0
     // Reset the on_close handler here.
     (*cli).on_close([cli, conn](socket_t fd) {
-        printf("Closing client fd %d\r\n", fd);
+        printf("Closing client fd %d, delete cli and conn\r\n", fd);
         delete cli;
         delete conn;
         nconns--;
         return true;
     });
-    #endif
 
     mqtt_pingreq pingreq;
+
+    // Send the first message to server and read await the reply from server.
     if (!conn->send_await(pingreq)) {
         printf("Failed to send PINGREQ to client fd %d\r\n", cli->sock_handle());
         cli->close_await();
-    } else if (!cli->read_await(timeout)) {
+    } else if (!conn->read_await(timeout)) {
         printf("Failed to read from client fd %d\r\n", cli->sock_handle());
         cli->close_await();
     }
+
     printf("Client fd %d read waiting\r\n", cli->sock_handle());
 }
 
@@ -86,6 +94,7 @@ static bool connect_server(nio_event &ev, const char *ip, int port, int timeout)
     }).on_error([cli](socket_t fd) {
         cli->close_await();
     }).on_close([cli](socket_t fd) {
+        printf("Closing client fd %d, delete cli\r\n", fd);
         delete cli;
         nconns--;
         return true;
