@@ -27,6 +27,8 @@ static void handle_client(client_socket *cli, int timeout) {
         ssize_t ret = ::read(fd, buf, sizeof(buf));
         if (ret <= 0 || cli->write(buf, ret, timeout) == -1) {
             cli->close_await();
+        } else {
+            cli->read_await(timeout);
         }
     }).on_write([cli](socket_t fd, bool expired) {
         if (expired) {

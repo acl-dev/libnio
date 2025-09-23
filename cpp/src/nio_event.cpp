@@ -46,8 +46,14 @@ nio_event::~nio_event() {
 //#define US2NS   1000
 
 void nio_event::add_timer(event_timer *tm, const long long ms) {
+    // Because the stamp is in ms precise in nio_event_stamp(), so I can
+    // make the difference by add one ns for each timer's expire stamp,
+    // which will decrease the count of timer with the same key in timers_,
+    // and I hope it will increase the performance of removing timer from
+    // the timers_ container.
+
     const long long stamp = nio_event_stamp(ev_);
-    long long when = stamp + ms * MS2NS + counter_ % MS2NS;
+    long long when = stamp + ms * MS2NS + counter_++ % MS2NS;
     tm->set_expire(when);
     timers_.insert({when, tm});
 }
