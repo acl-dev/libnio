@@ -127,7 +127,7 @@ bool client_socket::read_await(int ms /* -1 */) {
 }
 
 void client_socket::read_callback(NIO_EVENT *, NIO_FILE *fe) {
-    auto *cli = (client_socket*) fe->ctx;
+    auto *cli = static_cast<client_socket*>(fe->ctx);
     assert(cli);
     if (cli->read_timer_ && cli->read_timer_->is_waiting()) {
         cli->ev_.del_timer(cli->read_timer_);

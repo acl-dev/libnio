@@ -368,6 +368,7 @@ static int iocp_wait(NIO_EVENT *ev, int timeout) {
         BOOL isSuccess = GetQueuedCompletionStatus(ei->h_iocp,
                 &bytesTransferred, (PULONG_PTR) &fe,
                 (OVERLAPPED**) &event, timeout);
+        nio_set_stamp(ev);
 
         if (!isSuccess) {
             if (event == NULL) {

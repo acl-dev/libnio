@@ -21,8 +21,8 @@ typedef enum {
 } nio_event_t;
 
 enum {
-    NIO_EVENT_F_NONE   = (0),
-    NIO_EVENT_F_DIRECT = (1 << 1),
+    NIO_EVENT_F_NONE   = 0,
+    NIO_EVENT_F_DIRECT = 0x02,
 };
 
 class event_timer;
@@ -56,7 +56,7 @@ public:
      * @brief Delete a timer from the event loop.
      * @param tm The timer to delete.
      */
-    void del_timer(event_timer *tm);
+    void del_timer(const event_timer *tm);
 
     /**
      * @brief Reset a timer with a new timeout.
@@ -66,7 +66,7 @@ public:
     void reset_timer(event_timer *tm, long long ms);
 
     /**
-     * @brief Delay close a event proc.
+     * @brief Delay close an event proc.
      * @param proc The event proc to delay close.
      */
     void delay_close(event_proc *proc);
@@ -77,7 +77,6 @@ public:
      */
     void delay_close(client_socket *client);
 
-public:
     /**
      * @brief Get the C event object
      * @return NIO_EVENT* 
@@ -110,11 +109,9 @@ private:
     NIO_EVENT *ev_;
     std::list<event_proc*> procs_free_;
     std::list<client_socket*> clients_free_;
-    long long stamp_ = 0;
     unsigned counter_ = 0;
     std::multimap<long long, event_timer *> timers_;
 
-    void set_stamp();
     void trigger_timers();
 
     static void before_wait(void *ctx);

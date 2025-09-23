@@ -191,6 +191,7 @@ static int epoll_event_wait(NIO_EVENT *ev, int timeout) {
     int n, i;
 
     n = epoll_wait(ep->epfd, ep->events, ep->size, timeout);
+    nio_set_stamp(ev);
 
     if (n < 0) {
         if (nio_last_error() == EVENT_EINTR) {

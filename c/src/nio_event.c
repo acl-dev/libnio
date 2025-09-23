@@ -9,7 +9,27 @@
 #include "events/nio_event_iocp.h"
 #include "event.h"
 
-NIO_EVENT *nio_event_create(int size, int nio_event_type, unsigned flags) {
+#define SEC2NS  1000000000
+#define MS2NS   1000000
+#define MS2US   1000
+#define US2NS   1000
+
+void nio_set_stamp(NIO_EVENT *ev) {
+#if 0
+    timeval tm;
+    gettimeofday(&tm, nullptr);
+    ev->stamp = tm.tv_sec * SEC2NS + tm.tv_usec * US2NS - tm.tv_usec % MS2NS;
+#else
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == 0) {
+        // Change to ns but with ms precise.
+        ev->stamp = (long long) ts.tv_sec * SEC2NS
+            + ts.tv_nsec - ts.tv_nsec % MS2NS;
+    }
+#endif
+}
+
+NIO_EVENT *nio_event_create(int size, const int nio_event_type, const unsigned flags) {
     NIO_EVENT *ev = NULL;
 
     switch (nio_event_type) {
@@ -53,17 +73,19 @@ NIO_EVENT *nio_event_create(int size, int nio_event_type, unsigned flags) {
     ev->waiter  = 0;
     ev->flags  |= flags;
 
+    nio_set_stamp(ev);
+
     nio_msg_info("%s(%d): nio max size=%d, flags=%u", __FUNCTION__, __LINE__,
         size, flags);
 
     return ev;
 }
 
-const char *nio_event_name(NIO_EVENT *ev) {
+const char *nio_event_name(const NIO_EVENT *ev) {
     return ev->name();
 }
 
-size_t nio_event_size(NIO_EVENT *ev) {
+size_t nio_event_size(const NIO_EVENT *ev) {
     return ev->setsize;
 }
 
@@ -79,16 +101,15 @@ static int checkfd(NIO_EVENT *ev, NIO_FILE *fe) {
     return ev->checkfd(ev, fe);
 }
 #else
-static int checkfd(NIO_EVENT *ev, NIO_FILE *fe) {
+static int checkfd(const NIO_EVENT *ev, const NIO_FILE *fe) {
     (void) ev;
     /* If we cannot seek, it must be a pipe, socket or fifo, else it
      * should be a file.
      */
-    if (lseek(fe->fd, (off_t) 0, SEEK_SET) == -1 && errno == ESPIPE) {
+    if (lseek(fe->fd, 0, SEEK_SET) == -1 && errno == ESPIPE) {
         return 0;
-    } else {
-        return -1;
     }
+    return -1;
 }
 #endif
 
@@ -113,9 +134,8 @@ int nio_event_add_read(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc) {
             if (checkfd(ev, fe) == -1) {
                 ((NIO_FILE_*) fe)->type = TYPE_NOSOCK;
                 return 0;
-            } else {
-                ((NIO_FILE_*) fe)->type = TYPE_SOCK;
             }
+            ((NIO_FILE_*) fe)->type = TYPE_SOCK;
         }
 
         if ((ev->flags & EVENT_F_DIRECT) != 0) {
@@ -152,9 +172,8 @@ int nio_event_add_write(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc) {
             if (checkfd(ev, fe) == -1) {
                 ((NIO_FILE_*) fe)->type = TYPE_NOSOCK;
                 return 0;
-            } else {
-                ((NIO_FILE_*) fe)->type = TYPE_SOCK;
             }
+            ((NIO_FILE_*) fe)->type = TYPE_SOCK;
         }
 
         if ((ev->flags & EVENT_F_DIRECT) != 0) {
@@ -216,15 +235,15 @@ void nio_event_del_write(NIO_EVENT *ev, NIO_FILE *fe) {
 void nio_event_del_readwrite(NIO_EVENT *ev, NIO_FILE *fe) {
     if (ev->del_readwrite != NULL) {
         if (((NIO_FILE_ *) fe)->mask & (NIO_EVENT_READ | NIO_EVENT_WRITE)) {
-            ev->del_readwrite(ev, ((NIO_FILE_ *) fe));
+            ev->del_readwrite(ev, (NIO_FILE_ *) fe);
         }
     } else {
         if (((NIO_FILE_ *) fe)->mask & NIO_EVENT_READ) {
-            ev->del_read(ev, ((NIO_FILE_ *) fe));
+            ev->del_read(ev, (NIO_FILE_ *) fe);
         }
 
         if (((NIO_FILE_ *) fe)->mask & NIO_EVENT_WRITE) {
-            ev->del_write(ev, ((NIO_FILE_ *) fe));
+            ev->del_write(ev, (NIO_FILE_ *) fe);
         }
     }
 
@@ -245,11 +264,10 @@ void nio_event_del_readwrite(NIO_EVENT *ev, NIO_FILE *fe) {
 }
 
 static void nio_event_prepare(NIO_EVENT *ev) {
-    NIO_FILE_ *fe;
     NIO_RING *next;
 
     while ((next = nio_ring_first(&ev->events))) {
-        fe = nio_ring_to_appl(next, NIO_FILE_, me);
+        NIO_FILE_* fe = nio_ring_to_appl(next, NIO_FILE_, me);
 
         if (fe->oper & NIO_EVENT_DEL_READ) {
             ev->del_read(ev, fe);
@@ -272,8 +290,6 @@ static void nio_event_prepare(NIO_EVENT *ev) {
 }
 
 int nio_event_wait2(NIO_EVENT *ev, int timeout, void (*before_wait)(void *), void *ctx) {
-    int ret;
-
     if (ev->timeout < 0) {
         if (timeout < 0) {
             timeout = 100;
@@ -297,16 +313,18 @@ int nio_event_wait2(NIO_EVENT *ev, int timeout, void (*before_wait)(void *), voi
         before_wait(ctx);
     }
 
-    ret = ev->event_wait(ev, timeout);
-
-    return ret;
+    return ev->event_wait(ev, timeout);
 }
 
-int nio_event_wait(NIO_EVENT *ev, int timeout) {
+int nio_event_wait(NIO_EVENT *ev, const int timeout) {
     return nio_event_wait2(ev, timeout, NULL, NULL);
 }
 
-void nio_event_debug(int on) {
+long long nio_event_stamp(const NIO_EVENT *ev) {
+    return ev->stamp;
+}
+
+void nio_event_debug(const int on) {
     nio_msg_stdout(on);
     printf("NIO_FILE's size: %zd bytes\r\n", sizeof(NIO_FILE));
     printf("NIO_FILE_'s size: %zd bytes\r\n", sizeof(NIO_FILE_));

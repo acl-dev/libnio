@@ -140,6 +140,7 @@ static int poll_wait(NIO_EVENT *ev, int timeout) {
     }
 #endif
     n = poll(ep->pfds, ep->count, timeout);
+    nio_set_stamp(ev);
 #ifdef SYS_WIN
     if (n == SOCKET_ERROR) {
 #else

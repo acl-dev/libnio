@@ -11,7 +11,7 @@
 
 namespace nio {
 
-nio_event::nio_event(int size, nio_event_t type, unsigned flags) {
+nio_event::nio_event(const int max_size, const nio_event_t type, const unsigned flags) {
     int et = NIO_EVENT_TYPE_KERNEL;
     switch (type) {
     case NIO_EVENT_T_POLL:
@@ -33,24 +33,28 @@ nio_event::nio_event(int size, nio_event_t type, unsigned flags) {
         f |= EVENT_F_DIRECT;
     }
 
-    ev_ = nio_event_create(size, et, f);
-    set_stamp();
+    ev_ = nio_event_create(max_size, et, f);
 }
 
 nio_event::~nio_event() {
     nio_event_free(ev_);
 }
 
-void nio_event::add_timer(event_timer *tm, long long ms) {
-    long long when = stamp_ + ms * 1000 + counter_++ % 1000;
-    tm->set_expire(when);
+//#define SEC2NS  1000000000
+#define MS2NS   1000000
+//#define MS2US   1000
+//#define US2NS   1000
 
+void nio_event::add_timer(event_timer *tm, const long long ms) {
+    const long long stamp = nio_event_stamp(ev_);
+    long long when = stamp + ms * MS2NS + counter_ % MS2NS;
+    tm->set_expire(when);
     timers_.insert({when, tm});
 }
 
-void nio_event::del_timer(event_timer *tm) {
-    auto tmers = timers_.equal_range(tm->get_expire());
-    for (auto it = tmers.first; it != tmers.second; ++it) {
+void nio_event::del_timer(const event_timer *tm) {
+    const auto timers = timers_.equal_range(tm->get_expire());
+    for (auto it = timers.first; it != timers.second; ++it) {
         if (it->second == tm) {
             timers_.erase(it);
             break;
@@ -58,7 +62,7 @@ void nio_event::del_timer(event_timer *tm) {
     }
 }
 
-void nio_event::reset_timer(event_timer *tm, long long ms) {
+void nio_event::reset_timer(event_timer *tm, const long long ms) {
     del_timer(tm);
     add_timer(tm, ms);
 }
@@ -70,7 +74,7 @@ void nio_event::delay_close(event_proc *proc) {
     }
 }
 
-void nio_event::delay_close(nio::client_socket *client) {
+void nio_event::delay_close(client_socket *client) {
     if (!client->is_closing()) {
         client->set_closing();
         clients_free_.push_back(client);
@@ -78,66 +82,61 @@ void nio_event::delay_close(nio::client_socket *client) {
 }
 
 void nio_event::before_wait(void *ctx) {
-    auto *me = (nio_event *) ctx;
+    auto *me = static_cast<nio_event*>(ctx);
 
-    for (auto proc : me->procs_free_) {
+    for (const auto proc : me->procs_free_) {
         proc->on_close();
     }
     me->procs_free_.clear();
 
-    for (auto client : me->clients_free_) {
+    for (const auto client : me->clients_free_) {
         client->close();
     }
     me->clients_free_.clear();
 }
 
 void nio_event::wait(int ms) {
-    auto it = timers_.begin();
+    const auto it = timers_.begin();
     if (it != timers_.end()) {
-        int delay = (int) (it->first - stamp_);
+        const long long stamp = nio_event_stamp(ev_);
+        const int delay = static_cast<int>(it->first - stamp) / MS2NS;
         if (delay > 0 && delay < ms) {
             ms = delay;
         }
     }
 
     nio_event_wait2(ev_, ms, before_wait, this);
-    set_stamp();
+
     if (!timers_.empty()) {
         trigger_timers();
     }
 }
 
 void nio_event::trigger_timers() {
+    const long long stamp = nio_event_stamp(ev_);
     std::vector<event_timer *> timers;
     for (auto it = timers_.begin(); it != timers_.end();) {
-        if (it->first > stamp_) {
+        if (it->first > stamp) {
             break;
         }
         timers.push_back(it->second);
         it = timers_.erase(it);
     }
 
-    for (auto timer: timers) {
+    for (const auto timer: timers) {
         timer->on_timer();
     }
 }
 
-void nio_event::set_stamp() {
-    struct timeval tm { 0, 0 };
-    gettimeofday(&tm, nullptr);
-
-    stamp_ = tm.tv_sec * 1000000 + tm.tv_usec;
-}
-
-void nio_event::set_nblock(int fd, bool yes) {
+void nio_event::set_nblock(const int fd, const bool yes) {
     nio_non_blocking(fd, yes ? 1 : 0);
 }
 
-void nio_event::set_ndelay(int fd, bool yes) {
+void nio_event::set_ndelay(const int fd, const bool yes) {
     nio_tcp_nodelay(fd, yes ? 1 : 0);
 }
 
-void nio_event::debug(bool on) {
+void nio_event::debug(const bool on) {
     nio_event_debug(on ? 1 : 0);
 }
 

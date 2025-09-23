@@ -2,6 +2,7 @@
 // Created by shuxin zheng on 2025/2/17.
 //
 #include <getopt.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <csignal>
 #include <cstdio>
@@ -24,10 +25,16 @@ public:
         if (timeout > 0) {
             this->get_event()->add_timer(this, timeout);
         }
+
+        gettimeofday(&begin_, nullptr);
     }
 
     ~client_proc() override {
-        printf("Close fd %d\r\n", fd_);
+        timeval end {0, 0};
+        gettimeofday(&end, nullptr);
+        double tc = static_cast<double>(end.tv_sec - begin_.tv_sec) * 1000.0 +
+               static_cast<double>(end.tv_usec - begin_.tv_usec) / 1000.0;
+        printf("Close fd %d, tc: %.2f\r\n\r\n", fd_, tc);
         ::close(fd_);
     }
 
@@ -79,6 +86,7 @@ protected:
 private:
     int fd_;
     int timeout_;
+    timeval begin_ {0, 0};
 };
 
 class server_proc : public event_proc {

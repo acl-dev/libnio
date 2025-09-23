@@ -1,8 +1,6 @@
 #ifndef NIO_EVENT_INCLUDE_H
 #define NIO_EVENT_INCLUDE_H
 
-#include <stdlib.h>
-
 #ifdef	HAS_EPOLL
 #include <sys/epoll.h>
 #endif
@@ -53,11 +51,11 @@ void nio_file_set_ctx(NIO_FILE *fe, void *ctx);
 void *nio_file_get_ctx(NIO_FILE *fe);
 
 /* nio_event.c */
-NIO_EVENT *nio_event_create(int size, int event_type, unsigned flags);
+NIO_EVENT *nio_event_create(int size, int nio_event_type, unsigned flags);
 #define EVENT_F_DIRECT      (1 << 1)
 
-const char *nio_event_name(NIO_EVENT *ev);
-size_t nio_event_size(NIO_EVENT *ev);
+const char *nio_event_name(const NIO_EVENT *ev);
+size_t nio_event_size(const NIO_EVENT *ev);
 void nio_event_free(NIO_EVENT *ev);
 
 int  nio_event_add_read(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc);
@@ -65,9 +63,9 @@ int  nio_event_add_write(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc);
 void nio_event_del_read(NIO_EVENT *ev, NIO_FILE *fe);
 void nio_event_del_write(NIO_EVENT *ev, NIO_FILE *fe);
 void nio_event_del_readwrite(NIO_EVENT *ev, NIO_FILE *fe);
-int  nio_event_wait(NIO_EVENT *ev, int left);
-int  nio_event_wait2(NIO_EVENT *ev, int left, void (*before_wait)(void *), void *ctx);
-
+int  nio_event_wait(NIO_EVENT *ev, int timeout);
+int  nio_event_wait2(NIO_EVENT *ev, int timeout, void (*before_wait)(void *), void *ctx);
+long long nio_event_stamp(const NIO_EVENT *ev);
 void nio_event_debug(int on);
 
 #ifdef	__cplusplus

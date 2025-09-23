@@ -191,6 +191,7 @@ static int wnio_msg_wait(NIO_EVENT *ev, int timeout) {
     MSG msg;
     UINT_PTR id = SetTimer(NULL, 0, timeout, NULL);
     BOOL res = GetMessage(&msg, NULL, 0, 0);
+    nio_set_stamp(ev);
 
     KillTimer(NULL, id);
     if (!res) {

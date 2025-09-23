@@ -142,6 +142,7 @@ static int select_event_wait(NIO_EVENT *ev, int timeout) {
         }
     }
     n = select(es->maxfd + 1, &rset, 0, &xset, tp);
+    nio_set_stamp(ev);
 #endif
     if (n < 0) {
         if (nio_last_error() == EVENT_EINTR) {

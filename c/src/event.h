@@ -149,11 +149,12 @@ struct NIO_EPOLL_EVENT {
 typedef int  nio_event_oper(NIO_EVENT *ev, NIO_FILE_ *fe);
 
 struct NIO_EVENT {
-    NIO_RING events;
-    int      timeout;
-    int      fdcount;
-    size_t   setsize;
-    socket_t maxfd;
+    NIO_RING  events;
+    int       timeout;
+    int       fdcount;
+    size_t    setsize;
+    socket_t  maxfd;
+    long long stamp;
 
     unsigned flags;
 #define EVENT_F_IOCP        (1 << 0)
@@ -176,6 +177,8 @@ struct NIO_EVENT {
     nio_event_oper *del_readwrite;
     nio_event_oper *close_sock;
 };
+
+void nio_set_stamp(NIO_EVENT *ev);
 
 #ifdef	__cplusplus
 }

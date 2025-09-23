@@ -158,6 +158,7 @@ static int kqueue_wait(NIO_EVENT *ev, int timeout) {
     n = __sys_kevent(ek->kqfd, ek->changes, ek->nchanges, ek->events,
             ek->nevents, &ts);
     ek->nchanges = 0;
+    nio_set_stamp(ev);
 
     if (n == -1) {
         if (nio_last_error() == EVENT_EINTR) {
