@@ -30,18 +30,24 @@ static int epoll_add_read(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
     struct epoll_event ee;
     int op, n;
 
-    if ((fe->mask & NIO_EVENT_READ)) {
-        return 0;
-    }
+    //if ((fe->mask & NIO_EVENT_READ)) {
+    //    return 0;
+    //}
 
-    ee.events   = 0;
+    ee.events   = EPOLLIN;
     ee.data.u32 = 0;
     ee.data.u64 = 0;
     ee.data.ptr = fe;
 
-    ee.events |= EPOLLIN;
+    if ((ep->event.flags & NIO_EVENT_ONESHOT) != 0) {
+        ee.events |= EPOLLONESHOT;
+    }
+
     if (fe->mask & NIO_EVENT_WRITE) {
         ee.events |= EPOLLOUT;
+        op = EPOLL_CTL_MOD;
+        n  = 0;
+    } else if (fe->mask & NIO_EVENT_READ) {
         op = EPOLL_CTL_MOD;
         n  = 0;
     } else {
@@ -66,15 +72,16 @@ static int epoll_add_write(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
     struct epoll_event ee;
     int op, n;
 
-    ee.events   = 0;
+    ee.events   = EPOLLOUT;
     ee.data.u32 = 0;
     ee.data.u64 = 0;
     ee.data.ptr = fe;
 
-    ee.events |= EPOLLOUT;
-
     if (fe->mask & NIO_EVENT_READ) {
         ee.events |= EPOLLIN;
+        op = EPOLL_CTL_MOD;
+        n  = 0;
+    } else if (fe->mask & NIO_EVENT_WRITE) {
         op = EPOLL_CTL_MOD;
         n  = 0;
     } else {
@@ -108,6 +115,10 @@ static int epoll_del_read(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
 
     if (fe->mask & NIO_EVENT_WRITE) {
         ee.events = EPOLLOUT;
+        if (ep->event.flags & NIO_EVENT_ONESHOT) {
+            ee.events |= EPOLLONESHOT;
+        }
+
         op = EPOLL_CTL_MOD;
         n  = 0;
     } else {
@@ -140,6 +151,10 @@ static int epoll_del_write(EVENT_EPOLL *ep, NIO_FILE_ *fe) {
 
     if (fe->mask & NIO_EVENT_READ) {
         ee.events = EPOLLIN;
+        if (ep->event.flags & NIO_EVENT_ONESHOT) {
+            ee.events |= EPOLLONESHOT;
+        }
+
         op = EPOLL_CTL_MOD;
         n  = 0;
     } else {

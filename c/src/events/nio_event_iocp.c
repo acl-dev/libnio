@@ -31,11 +31,11 @@ typedef struct EVENT_IOCP {
 struct IOCP_EVENT {
     OVERLAPPED overlapped;
     int   type;
-#define	IOCP_NIO_EVENT_READ		(1 << 0)
-#define IOCP_NIO_EVENT_WRITE	(1 << 2)
-#define IOCP_EVENT_DEAD		(1 << 3)
-#define	IOCP_EVENT_POLLR	(1 << 4)
-#define	IOCP_EVENT_POLLW	(1 << 4)
+#define IOCP_NIO_EVENT_READ     (1 << 0)
+#define IOCP_NIO_EVENT_WRITE    (1 << 2)
+#define IOCP_EVENT_DEAD         (1 << 3)
+#define IOCP_EVENT_POLLR        (1 << 4)
+#define IOCP_EVENT_POLLW        (1 << 4)
     int   refer;
     NIO_FILE_ *fe;
     event_proc *proc;
@@ -458,7 +458,7 @@ NIO_EVENT *nio_iocp_create(int size) {
     ei->event.name   = iocp_name;
     ei->event.handle = iocp_handle;
     ei->event.free   = iocp_free;
-    ei->event.flags  = EVENT_F_IOCP;
+    ei->event.flags  = NIO_EVENT_IOCP;
 
     ei->event.event_wait     = iocp_wait;
     ei->event.checkfd        = (nio_event_oper *) iocp_checkfd;

@@ -129,7 +129,9 @@ int nio_event_add_read(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc) {
         ((NIO_FILE_*) fe)->oper &= ~NIO_EVENT_DEL_READ;
     }
 
-    if (!(((NIO_FILE_*) fe)->mask & NIO_EVENT_READ)) {
+    if (!(((NIO_FILE_*) fe)->mask & NIO_EVENT_READ)
+            || (ev->flags & NIO_EVENT_ONESHOT) != 0) {
+
         if (((NIO_FILE_*) fe)->type == TYPE_NONE) {
             if (checkfd(ev, fe) == -1) {
                 ((NIO_FILE_*) fe)->type = TYPE_NOSOCK;
@@ -138,7 +140,7 @@ int nio_event_add_read(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc) {
             ((NIO_FILE_*) fe)->type = TYPE_SOCK;
         }
 
-        if ((ev->flags & EVENT_F_DIRECT) != 0) {
+        if ((ev->flags & NIO_EVENT_DIRECT) != 0) {
             ev->add_read(ev, (NIO_FILE_*) fe);
         } else if (((NIO_FILE_*) fe)->me.parent == &((NIO_FILE_*) fe)->me) {
             nio_ring_prepend(&ev->events, &((NIO_FILE_*) fe)->me);
@@ -167,7 +169,9 @@ int nio_event_add_write(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc) {
         ((NIO_FILE_*) fe)->oper &= ~NIO_EVENT_DEL_WRITE;
     }
 
-    if (!(((NIO_FILE_*) fe)->mask & NIO_EVENT_WRITE)) {
+    if (!(((NIO_FILE_*) fe)->mask & NIO_EVENT_WRITE)
+            || (ev->flags & NIO_EVENT_ONESHOT) != 0) {
+
         if (((NIO_FILE_*) fe)->type == TYPE_NONE) {
             if (checkfd(ev, fe) == -1) {
                 ((NIO_FILE_*) fe)->type = TYPE_NOSOCK;
@@ -176,7 +180,7 @@ int nio_event_add_write(NIO_EVENT *ev, NIO_FILE *fe, nio_event_proc *proc) {
             ((NIO_FILE_*) fe)->type = TYPE_SOCK;
         }
 
-        if ((ev->flags & EVENT_F_DIRECT) != 0) {
+        if ((ev->flags & NIO_EVENT_DIRECT) != 0) {
             ev->add_write(ev, (NIO_FILE_*) fe);
         } else if (((NIO_FILE_*) fe)->me.parent == &((NIO_FILE_*) fe)->me) {
             nio_ring_prepend(&ev->events, &((NIO_FILE_*) fe)->me);
@@ -197,7 +201,7 @@ void nio_event_del_read(NIO_EVENT *ev, NIO_FILE *fe) {
     }
 
     if (((NIO_FILE_*) fe)->mask & NIO_EVENT_READ) {
-        if ((ev->flags & EVENT_F_DIRECT) != 0) {
+        if ((ev->flags & NIO_EVENT_DIRECT) != 0) {
             ev->del_read(ev, (NIO_FILE_*) fe);
         } else if (((NIO_FILE_*) fe)->me.parent == &((NIO_FILE_*) fe)->me) {
             nio_ring_prepend(&ev->events, &((NIO_FILE_*) fe)->me);
@@ -218,7 +222,7 @@ void nio_event_del_write(NIO_EVENT *ev, NIO_FILE *fe) {
     }
 
     if (((NIO_FILE_*) fe)->mask & NIO_EVENT_WRITE) {
-        if ((ev->flags & EVENT_F_DIRECT) != 0) {
+        if ((ev->flags & NIO_EVENT_DIRECT) != 0) {
             ev->del_write(ev, (NIO_FILE_*) fe);
         } else if (((NIO_FILE_*) fe)->me.parent == &((NIO_FILE_*) fe)->me) {
             nio_ring_prepend(&ev->events, &((NIO_FILE_*) fe)->me);

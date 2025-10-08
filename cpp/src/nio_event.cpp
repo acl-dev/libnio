@@ -30,7 +30,10 @@ nio_event::nio_event(const int max_size, const nio_event_t type, const unsigned 
 
     unsigned f = 0;
     if ((flags & NIO_EVENT_F_DIRECT) != 0) {
-        f |= EVENT_F_DIRECT;
+        f |= NIO_EVENT_DIRECT;
+    }
+    if ((flags & NIO_EVENT_F_ONESHOT) != 0) {
+        f |= NIO_EVENT_ONESHOT;
     }
 
     ev_ = nio_event_create(max_size, et, f);

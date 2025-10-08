@@ -21,8 +21,9 @@ typedef enum {
 } nio_event_t;
 
 enum {
-    NIO_EVENT_F_NONE   = 0,
-    NIO_EVENT_F_DIRECT = 0x02,
+    NIO_EVENT_F_NONE    = 0,
+    NIO_EVENT_F_ONESHOT = 0x01,
+    NIO_EVENT_F_DIRECT  = 0x02,
 };
 
 class event_timer;

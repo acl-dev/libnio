@@ -157,10 +157,8 @@ struct NIO_EVENT {
     long long stamp;
 
     unsigned flags;
-#define EVENT_F_IOCP        (1 << 0)
-#define EVENT_IS_IOCP(x)    ((x)->flag & EVENT_F_IOCP)
-
     unsigned waiter;
+
     nio_handle_t (*handle)(NIO_EVENT *);
 
     const char *(*name)(void);
