@@ -12,6 +12,14 @@ struct NIO_FILE;
 
 namespace nio {
 
+enum {
+    client_f_init   = 0x00,
+    client_f_rtimer = 0x01,
+    client_f_wtimer = 0x02,
+    client_f_read   = 0x04,
+    client_f_write  = 0x08,
+};
+
 class nio_event;
 class client_timer;
 
@@ -213,6 +221,7 @@ private:
     ssize_t flush();
 
 private:
+    unsigned     flags_        = client_f_init;
     client_timer *read_timer_  = nullptr;
     client_timer *write_timer_ = nullptr;
     std::string  *buf_         = nullptr;

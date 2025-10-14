@@ -43,6 +43,10 @@ nio_event::~nio_event() {
     nio_event_free(ev_);
 }
 
+bool nio_event::isset_oneshot() const {
+    return nio_event_isset_oneshot(ev_);
+}
+
 //#define SEC2NS  1000000000
 #define MS2NS   1000000
 //#define MS2US   1000

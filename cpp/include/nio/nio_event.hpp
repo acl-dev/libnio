@@ -106,6 +106,12 @@ public:
      */
     static void set_ndelay(int fd, bool yes);
 
+    /**
+     * If the event has been set NIO_EVENT_F_ONESHOT flag.
+     * @return {bool}
+     */
+    bool isset_oneshot() const;
+
 private:
     NIO_EVENT *ev_;
     std::list<event_proc*> procs_free_;

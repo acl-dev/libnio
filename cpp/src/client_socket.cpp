@@ -88,6 +88,7 @@ bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
 void client_socket::connect_callback(NIO_EVENT *ev, NIO_FILE *fe) {
     auto *cli = (client_socket*) fe->ctx;
     assert(cli);
+    cli->flags_ &= ~client_f_wtimer;
 
     if (cli->write_timer_ && cli->write_timer_->is_connecting()) {
         cli->write_timer_->set_waiting(false);
@@ -109,9 +110,12 @@ void client_socket::connect_callback(NIO_EVENT *ev, NIO_FILE *fe) {
 
 bool client_socket::read_await(int ms /* -1 */) {
     assert(fe_);
-    if (!nio_event_add_read(ev_.get_event(), fe_, read_callback)) {
-        return false;
+    if (!ev_.isset_oneshot() || (flags_ & client_f_rtimer) == 0) {
+        if (!nio_event_add_read(ev_.get_event(), fe_, read_callback)) {
+            return false;
+        }
     }
+
     if (ms <= 0) {
         return true;
     }
@@ -119,6 +123,7 @@ bool client_socket::read_await(int ms /* -1 */) {
     if (read_timer_ == nullptr) {
         read_timer_ = new client_timer(*this);
     }
+
     if (!read_timer_->is_waiting()) {
         ev_.add_timer(read_timer_, ms);
         read_timer_->set_waiting(true);
@@ -129,6 +134,8 @@ bool client_socket::read_await(int ms /* -1 */) {
 void client_socket::read_callback(NIO_EVENT *, NIO_FILE *fe) {
     auto *cli = static_cast<client_socket*>(fe->ctx);
     assert(cli);
+    cli->flags_ &= ~client_f_rtimer;
+
     if (cli->read_timer_ && cli->read_timer_->is_waiting()) {
         cli->ev_.del_timer(cli->read_timer_);
         cli->read_timer_->set_waiting(false);
@@ -140,9 +147,12 @@ void client_socket::read_callback(NIO_EVENT *, NIO_FILE *fe) {
 
 bool client_socket::write_await(int ms /* -1 */) {
     assert(fe_);
-    if (!nio_event_add_write(ev_.get_event(), fe_, write_callback)) {
-        return false;
+    if (!ev_.isset_oneshot() || (flags_ & client_f_wtimer) == 0) {
+        if (!nio_event_add_write(ev_.get_event(), fe_, write_callback)) {
+            return false;
+        }
     }
+
     if (ms <= 0) {
         return true;
     }
@@ -150,6 +160,7 @@ bool client_socket::write_await(int ms /* -1 */) {
     if (write_timer_ == nullptr) {
         write_timer_ = new client_timer(*this);
     }
+
     if (!write_timer_->is_waiting()) {
         ev_.add_timer(write_timer_, ms);
         write_timer_->set_waiting(true);
@@ -160,6 +171,8 @@ bool client_socket::write_await(int ms /* -1 */) {
 void client_socket::write_callback(NIO_EVENT *, NIO_FILE *fe) {
     auto *cli = (client_socket*) fe->ctx;
     assert(cli);
+    cli->flags_ &= ~client_f_wtimer;
+
     if (cli->write_timer_ && cli->write_timer_->is_waiting()) {
         cli->ev_.del_timer(cli->write_timer_);
         cli->write_timer_->set_waiting(false);
@@ -211,11 +224,14 @@ ssize_t client_socket::flush() {
 void client_socket::on_timer(client_timer *timer) {
     if (timer == read_timer_) {
         timer->set_waiting(false);
+        flags_ |= client_f_rtimer;
         if (on_read_) {
             on_read_(fe_->fd, true);
         }
+        flags_ &= ~client_f_rtimer;
     } else if (timer == write_timer_) {
         timer->set_waiting(false);
+        flags_ |= client_f_wtimer;
         if (timer->is_connecting()) {
             timer->set_connecting(false);
             if (on_connect_) {
@@ -224,6 +240,7 @@ void client_socket::on_timer(client_timer *timer) {
         } else if (on_write_) {
             on_write_(fe_->fd, true);
         }
+        flags_ &= ~client_f_wtimer;
     } else {
         assert(0);
     }

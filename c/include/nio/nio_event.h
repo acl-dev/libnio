@@ -56,6 +56,8 @@ NIO_EVENT *nio_event_create(int size, int nio_event_type, unsigned flags);
 #define NIO_EVENT_DIRECT      0x02
 #define NIO_EVENT_IOCP        0x04
 
+int nio_event_isset_oneshot(const NIO_EVENT *ev);
+
 const char *nio_event_name(const NIO_EVENT *ev);
 size_t nio_event_size(const NIO_EVENT *ev);
 void nio_event_free(NIO_EVENT *ev);

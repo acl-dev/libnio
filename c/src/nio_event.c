@@ -81,6 +81,10 @@ NIO_EVENT *nio_event_create(int size, const int nio_event_type, const unsigned f
     return ev;
 }
 
+int nio_event_isset_oneshot(const NIO_EVENT *ev) {
+    return (ev->flags & NIO_EVENT_ONESHOT) != 0;
+}
+
 const char *nio_event_name(const NIO_EVENT *ev) {
     return ev->name();
 }
