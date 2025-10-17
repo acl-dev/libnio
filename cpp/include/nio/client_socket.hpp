@@ -86,17 +86,17 @@ public:
     /**
      * @brief Disable the read event.
      */
-    void read_disable();
+    void read_disable() const;
 
     /**
      * @brief Disable the write event.
      */
-    void write_disable();
+    void write_disable() const;
 
     /**
      * @brief Disable the read and write event.
      */
-    void readwrite_disable();
+    void readwrite_disable() const;
 
     /**
      * @brief Close the socket in async mode.
@@ -106,7 +106,7 @@ public:
     /**
      * @brief Set the socket's closing flag.
      */
-    void set_closing();
+    void set_closing(bool yes = true);
 
     /**
      * @brief Get the socket's closing flag.
@@ -166,14 +166,13 @@ public:
         return ctx_;
     }
 
-public:
     /**
      * @brief Read data from the socket.
      * @param buf The buffer to store the data.
      * @param count The buffer's capacity.
      * @return ssize_t Return the number of bytes read, or -1 if an error occurs, 0 if socket was closed.
      */
-    ssize_t read(void *buf, size_t count);
+    ssize_t read(void *buf, size_t count) const;
 
     /**
      * @brief Write data to the socket.
@@ -203,24 +202,23 @@ private:
     friend class nio_event;
 
     nio_event &ev_;
-    connect_handler_t on_connect_;
-    read_handler_t    on_read_;
-    write_handler_t   on_write_;
-    error_handler_t   on_error_;
-    close_handler_t   on_close_;
+    connect_handler_t on_connect_ = nullptr;
+    read_handler_t    on_read_    = nullptr;
+    write_handler_t   on_write_   = nullptr;
+    error_handler_t   on_error_   = nullptr;
+    close_handler_t   on_close_   = nullptr;
 
     void *ctx_     = nullptr;
     NIO_FILE *fe_  = nullptr;
     bool closing_  = false;
-    void close();
+    void close() const;
 
     static void connect_callback(NIO_EVENT *ev, NIO_FILE *fe);
     static void read_callback(NIO_EVENT *ev, NIO_FILE *fe);
     static void write_callback(NIO_EVENT *ev, NIO_FILE *fe);
 
-    ssize_t flush();
+    ssize_t flush() const;
 
-private:
     unsigned     flags_        = client_f_init;
     client_timer *read_timer_  = nullptr;
     client_timer *write_timer_ = nullptr;
@@ -267,7 +265,7 @@ public:
 
     /**
      * @brief Set the connecting status of the client socket.
-     * @param The connecting status to set: true or false.
+     * @param yes The connecting status to set: true or false.
      */
     void set_connecting(bool yes) {
         connecting_ = yes;

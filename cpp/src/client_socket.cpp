@@ -4,7 +4,7 @@
 
 #include "stdafx.hpp"
 #include "nio/nio_event.hpp"
-#include "nio/event_proc.hpp"
+//#include "nio/event_proc.hpp"
 #include "nio/client_socket.hpp"
 
 namespace nio {
@@ -30,23 +30,23 @@ socket_t client_socket::sock_handle() const {
     return fe_ ? fe_->fd : invalid_socket;
 }
 
-void client_socket::read_disable() {
+void client_socket::read_disable() const {
     assert(fe_);
     nio_event_del_read(ev_.get_event(), fe_);
 }
 
-void client_socket::write_disable() {
+void client_socket::write_disable() const {
     assert(fe_);
     nio_event_del_write(ev_.get_event(), fe_);
 }
 
-void client_socket::readwrite_disable() {
+void client_socket::readwrite_disable() const {
     assert(fe_);
     nio_event_del_readwrite(ev_.get_event(), fe_);
 }
 
 bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
-    struct sockaddr_in sa;
+    sockaddr_in sa{};
     memset(&sa, 0, sizeof(sa));
     sa.sin_family      = PF_INET;
     sa.sin_port        = htons(port);
@@ -58,7 +58,7 @@ bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
     int on = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-    if (::connect(fd, (const struct sockaddr*) &sa, sizeof(sa)) < 0) {
+    if (::connect(fd, reinterpret_cast<const sockaddr*>(&sa), sizeof(sa)) < 0) {
         if (errno != EINPROGRESS && errno != EISCONN) {
             ::close(fd);
             return false;
@@ -86,7 +86,7 @@ bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
 }
 
 void client_socket::connect_callback(NIO_EVENT *ev, NIO_FILE *fe) {
-    auto *cli = (client_socket*) fe->ctx;
+    auto *cli = static_cast<client_socket*>(fe->ctx);
     assert(cli);
     cli->flags_ &= ~client_f_wtimer;
 
@@ -169,7 +169,7 @@ bool client_socket::write_await(int ms /* -1 */) {
 }
 
 void client_socket::write_callback(NIO_EVENT *, NIO_FILE *fe) {
-    auto *cli = (client_socket*) fe->ctx;
+    auto *cli = static_cast<client_socket*>(fe->ctx);
     assert(cli);
     cli->flags_ &= ~client_f_wtimer;
 
@@ -196,13 +196,13 @@ void client_socket::write_callback(NIO_EVENT *, NIO_FILE *fe) {
     }
 }
 
-ssize_t client_socket::flush() {
+ssize_t client_socket::flush() const {
     if (!buf_ || buf_->empty()) {
         return 0;
     }
 
     ssize_t ret = ::write(fe_->fd, buf_->c_str(), buf_->size());
-    if (ret == (ssize_t) buf_->size()) {
+    if (ret == static_cast<ssize_t>(buf_->size())) {
         buf_->clear();
         return ret;
     }
@@ -246,8 +246,8 @@ void client_socket::on_timer(client_timer *timer) {
     }
 }
 
-void client_socket::set_closing() {
-    closing_ = true;
+void client_socket::set_closing(const bool yes) {
+    closing_ = yes;
 }
 
 void client_socket::close_await() {
@@ -260,7 +260,7 @@ void client_socket::close_await() {
     }
 }
 
-void client_socket::close() {
+void client_socket::close() const {
     if (read_timer_ && read_timer_->is_waiting()) {
         ev_.del_timer(read_timer_);
         read_timer_->set_waiting(false);
@@ -271,7 +271,7 @@ void client_socket::close() {
     }
 
     if (fe_ && fe_->fd >= 0) {
-        int fd = fe_->fd;
+        const int fd = fe_->fd;
         if (on_close_ != nullptr) {
             if (on_close_(fe_->fd)) {
                 ::close(fd);
@@ -280,7 +280,7 @@ void client_socket::close() {
             ::close(fd);
         }
     } else if (on_close_ != nullptr) {
-        on_close_(-1);
+        (void) on_close_(-1);
     }
 }
 
@@ -314,18 +314,18 @@ client_socket &client_socket::set_ctx(void *ctx) {
     return *this;
 }
 
-ssize_t client_socket::read(void *buf, size_t count) {
+ssize_t client_socket::read(void *buf, size_t count) const {
     return ::read(fe_->fd, buf, count);
 }
 
 ssize_t client_socket::write(const void *data, size_t len, int ms) {
     if (buf_ && !buf_->empty()) {
-        buf_->append((const char*) data, len);
+        buf_->append(static_cast<const char*>(data), len);
         return 0;
     }
 
     ssize_t ret = ::write(fe_->fd, data, len);
-    if (ret == (ssize_t) len) {
+    if (ret == static_cast<ssize_t>(len)) {
         return ret;
     }
 
@@ -343,7 +343,7 @@ ssize_t client_socket::write(const void *data, size_t len, int ms) {
         buf_ = new std::string;
     }
 
-    buf_->append((const char *) data + ret, len - ret);
+    buf_->append(static_cast<const char*>(data) + ret, len - ret);
     if (!write_await(ms)) {
         return -1;
     }
