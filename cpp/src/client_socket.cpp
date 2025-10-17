@@ -46,7 +46,7 @@ void client_socket::readwrite_disable() const {
 }
 
 bool client_socket::connect_await(const char *ip, int port, int ms /* -1 */) {
-    sockaddr_in sa{};
+    sockaddr_in sa;
     memset(&sa, 0, sizeof(sa));
     sa.sin_family      = PF_INET;
     sa.sin_port        = htons(port);
