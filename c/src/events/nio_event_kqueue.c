@@ -7,31 +7,6 @@
 #include <sys/event.h>
 #include "nio_event_kqueue.h"
 
-typedef int (*kqueue_fn)(void);
-typedef int (*kevent_fn)(int, const struct kevent *, int, struct kevent *,
-	int, const struct timespec *);
-
-static kqueue_fn __sys_kqueue = NULL;
-static kevent_fn __sys_kevent = NULL;
-
-static void hook_api(void) {
-    __sys_kqueue = (kqueue_fn) dlsym(RTLD_NEXT, "kqueue");
-    assert(__sys_kqueue);
-
-    __sys_kevent = (kevent_fn) dlsym(RTLD_NEXT, "kevent");
-    assert(__sys_kevent);
-}
-
-static pthread_once_t __once_control = PTHREAD_ONCE_INIT;
-
-static void hook_init(void) {
-    if (pthread_once(&__once_control, hook_api) != 0) {
-        abort();
-    }
-}
-
-/****************************************************************************/
-
 typedef struct EVENT_KQUEUE {
     NIO_EVENT  event;
     int    kqfd;
@@ -61,7 +36,7 @@ static int kqueue_fflush(EVENT_KQUEUE *ek) {
 
     ts.tv_sec  = 0;
     ts.tv_nsec = 0;
-    if (__sys_kevent(ek->kqfd, ek->changes, ek->nchanges, NULL, 0, &ts) == -1) {
+    if (kevent(ek->kqfd, ek->changes, ek->nchanges, NULL, 0, &ts) == -1) {
         nio_msg_error("%s(%d): kevent error %d, kqfd=%d",
                 __FUNCTION__, __LINE__, nio_last_error(), ek->kqfd);
         return -1;
@@ -155,7 +130,7 @@ static int kqueue_wait(NIO_EVENT *ev, int timeout) {
     ts.tv_sec = timeout / 1000;
     ts.tv_nsec = (timeout % 1000) * 1000000;
 
-    n = __sys_kevent(ek->kqfd, ek->changes, ek->nchanges, ek->events,
+    n = kevent(ek->kqfd, ek->changes, ek->nchanges, ek->events,
             ek->nevents, &ts);
     ek->nchanges = 0;
     nio_set_stamp(ev);
@@ -213,10 +188,6 @@ static const char *kqueue_name(void) {
 NIO_EVENT *nio_kqueue_create(int size) {
     EVENT_KQUEUE *ek = (EVENT_KQUEUE *) nio_mem_calloc(1, sizeof(EVENT_KQUEUE));
 
-    if (__sys_kqueue == NULL) {
-        hook_init();
-    }
-
     if (size <= 0 || size > 1024) {
         size = 1024;
     }
@@ -227,7 +198,7 @@ NIO_EVENT *nio_kqueue_create(int size) {
     ek->nevents  = 100;
     ek->events   = (struct kevent *) nio_mem_malloc(sizeof(struct kevent) * ek->nevents);
 
-    ek->kqfd     = __sys_kqueue();
+    ek->kqfd     = kqueue();
     assert(ek->kqfd >= 0);
 
     ek->event.name   = kqueue_name;
