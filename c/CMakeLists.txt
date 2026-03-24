@@ -1,4 +1,11 @@
-cmake_minimum_required(VERSION 3.5.0)
+if(DEFINED ENV{CMAKE_MIN_VER})
+	cmake_minimum_required(VERSION $ENV{CMAKE_MIN_VER})
+else()
+    cmake_minimum_required(VERSION 3.5.0)
+endif()
+
+project(nio)
+
 #set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_BUILD_TYPE Release CACHE STRING "set build type to release")
 

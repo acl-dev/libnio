@@ -1,4 +1,9 @@
-cmake_minimum_required(VERSION 3.5.0)
+if(DEFINED ENV{CMAKE_MIN_VER})
+	cmake_minimum_required(VERSION $ENV{CMAKE_MIN_VER})
+else()
+    cmake_minimum_required(VERSION 3.5.0)
+endif()
+
 project(server)
 
 if (${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
